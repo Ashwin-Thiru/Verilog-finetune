@@ -1,0 +1,242 @@
+MODULE 1:
+Topic: memory
+```verilog
+module shift_register(clk, reset, load, data_in, data_out);
+
+parameter WIDTH = 16;
+
+input clk, reset, load;
+input [WIDTH-1:0] data_in;
+output [WIDTH-1:0] data_out;
+
+reg [WIDTH-1:0] register;
+
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
+        register <= 0;
+    end else begin
+        if (load) begin
+            register <= data_in;
+        end else begin
+            register <= {register[WIDTH-2:0], 1'b0};
+        end
+    end
+end
+
+assign data_out = register;
+
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module fifo_buffer
+#(parameter WIDTH = 4, DEPTH = 8)
+(
+    input clk,
+    input rst,
+    input en,
+    input wr,
+    input [WIDTH-1:0] data_in,
+    output reg rd,
+    output reg [WIDTH-1:0] data_out,
+    output reg empty,
+    output reg full
+);
+
+reg [WIDTH-1:0] buffer [DEPTH-1:0];
+reg [WIDTH-1:0] write_pointer, read_pointer;
+reg [3:0] count;
+
+always @(posedge clk) begin
+    if (rst) begin
+        write_pointer <= 0;
+        read_pointer <= 0;
+        count <= 0;
+        rd <= 0;
+        data_out <= 0;
+        empty <= 1;
+        full <= 1;
+    end else if (en) begin
+        if (wr && !full) begin
+            buffer[write_pointer] <= data_in;
+            write_pointer <= (write_pointer == DEPTH-1) ? 0 : write_pointer + 1;
+            count <= count + 1;
+        end else if (rd && !empty) begin
+            data_out <= buffer[read_pointer];
+            read_pointer <= (read_pointer == DEPTH-1) ? 0 : read_pointer + 1;
+            count <= count - 1;
+        end
+        rd <= (count > 0) ? 1 : 0;
+        empty <= (count == 0) ? 1 : 0;
+        full <= (count == DEPTH) ? 1 : 0;
+    end
+end
+
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+
+module RefModule (
+  input clk,
+  input reset,
+  input [3:1] s,
+  output reg fr3,
+  output reg fr2,
+  output reg fr1,
+  output reg dfr
+);
+
+  parameter A2=0, B1=1, B2=2, C1=3, C2=4, D1=5;
+  reg [2:0] state, next;
+
+  always @(posedge clk) begin
+    if (reset) state <= A2;
+    else state <= next;
+  end
+
+  always@(*) begin
+    case (state)
+      A2: next = s[1] ? B1 : A2;
+      B1: next = s[2] ? C1 : (s[1] ? B1 : A2);
+      B2: next = s[2] ? C1 : (s[1] ? B2 : A2);
+      C1: next = s[3] ? D1 : (s[2] ? C1 : B2);
+      C2: next = s[3] ? D1 : (s[2] ? C2 : B2);
+      D1: next = s[3] ? D1 : C2;
+      default: next = 'x;
+    endcase
+  end
+  reg [3:0] fr;
+  assign {fr3, fr2, fr1, dfr} = fr;
+  always_comb begin
+    case (state)
+      A2: fr = 4'b1111;
+      B1: fr = 4'b0110;
+      B2: fr = 4'b0111;
+      C1: fr = 4'b0010;
+      C2: fr = 4'b0011;
+      D1: fr = 4'b0000;
+      default: fr = 'x;
+    endcase
+  end
+
+endmodule
+
+
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module up_down_counter (
+    input clk,
+    input reset,
+    input up_down,    // Input to change the counting direction
+    output reg [3:0] q
+);
+
+    reg [3:0] next_q;
+
+    always @(posedge clk, negedge reset) begin
+        if (!reset) begin
+            q <= 4'b0000;
+        end else begin
+            if (up_down) begin
+                next_q = q + 1;
+            end else begin
+                next_q = q - 1;
+            end
+
+            q <= next_q;
+        end
+    end
+
+endmodule
+
+module transition_detector (
+    input clk,
+    input reset,
+    input data,
+    output reg transition
+);
+
+    reg [3:0] prev_data;
+
+    always @(posedge clk, negedge reset) begin
+        if (!reset) begin
+            prev_data <= 4'b0000;
+            transition <= 1'b0;
+        end else begin
+            if (data > prev_data) begin
+                transition <= 1'b0;
+            end else if (data < prev_data) begin
+                transition <= 1'b1;
+            end
+
+            prev_data <= data;
+        end
+    end
+
+endmodule
+
+module counter_direction (
+    input clk,
+    input reset,
+    input [3:0] counter_output,
+    input transition,
+    output reg [3:0] q
+);
+
+    reg up_down;
+
+    always @(posedge clk, negedge reset) begin
+        if (!reset) begin
+            up_down <= 1'b1;
+            q <= 4'b0000;
+        end else begin
+            if (transition) begin
+                up_down <= ~up_down;
+            end
+
+            if (up_down) begin
+                q <= counter_output;
+            end else begin
+                q <= ~counter_output + 1;
+            end
+        end
+    end
+
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module BOR (
+  input voltage,
+  input reset_in,
+  output reset_out
+);
+
+  parameter THRESHOLD = 3.3; // Set the threshold voltage to 3.3V
+  
+  reg reset_out_reg; // Declare a register to hold the reset signal
+  
+  always @(voltage) begin
+    if (voltage < THRESHOLD) begin
+      reset_out_reg <= 1'b0; // Activate the reset signal
+      #10; // Delay for 10 time units
+    end else begin
+      reset_out_reg <= 1'b1; // Deactivate the reset signal
+    end
+  end
+  
+  assign reset_out = ~reset_out_reg; // Invert the reset signal to make it active low
+  
+endmodule
+```
+

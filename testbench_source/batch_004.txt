@@ -1,0 +1,255 @@
+MODULE 1:
+Topic: fsm
+```verilog
+
+module RefModule (
+  input [3:1] y,
+  input w,
+  output reg Y2
+);
+
+  always_comb begin
+    case ({y, w})
+      4'h0: Y2 = 1'b0;
+      4'h1: Y2 = 1'b0;
+      4'h2: Y2 = 1'b1;
+      4'h3: Y2 = 1'b1;
+      4'h4: Y2 = 1'b0;
+      4'h5: Y2 = 1'b1;
+      4'h6: Y2 = 1'b0;
+      4'h7: Y2 = 1'b0;
+      4'h8: Y2 = 1'b0;
+      4'h9: Y2 = 1'b1;
+      4'ha: Y2 = 1'b1;
+      4'hb: Y2 = 1'b1;
+      default: Y2 = 1'bx;
+    endcase
+  end
+
+endmodule
+
+
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module moore_state_machine (
+  input clk,
+  input rst,
+  input in1,
+  input in2,
+  output reg out1,
+  output reg out2
+);
+
+  // Define your states and state variables here
+  parameter S0 = 2'b00;
+  parameter S1 = 2'b01;
+  parameter S2 = 2'b10;
+  
+  reg [1:0] state;
+  
+  // Define your outputs as a function of the current state
+  always @ (state) begin
+    case (state)
+      S0: begin
+        out1 = 1;
+        out2 = 0;
+      end
+      S1: begin
+        out1 = 0;
+        out2 = 1;
+      end
+      S2: begin
+        out1 = 1;
+        out2 = 1;
+      end
+    endcase
+  end
+  
+  // Define the state transitions based on the inputs and the current state
+  always @ (posedge clk, posedge rst) begin
+    if (rst) begin
+      state <= S0;
+    end else begin
+      case (state)
+        S0: begin
+          if (in1) begin
+            state <= S1;
+          end else if (in2) begin
+            state <= S2;
+          end
+        end
+        S1: begin
+          if (in2) begin
+            state <= S2;
+          end else if (!in1) begin
+            state <= S0;
+          end
+        end
+        S2: begin
+          if (!in1 && !in2) begin
+            state <= S0;
+          end
+        end
+      endcase
+    end
+  end
+  
+endmodule
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+module fsm_8bit_sequence_detection (
+  input clk,
+  input reset,
+  input [7:0] data,
+  output reg [2:0] position
+);
+
+  parameter S0 = 3'b000, S1 = 3'b001, S2 = 3'b010, S3 = 3'b011, S4 = 3'b100;
+  reg [2:0] state, next_state;
+  
+  always @(posedge clk) begin
+    if (reset) begin
+      state <= S0;
+      position <= 0;
+    end
+    else begin
+      state <= next_state;
+      position <= (state == S4) ? 1 : 0;
+    end
+  end
+  
+  always @(*) begin
+    next_state = state;
+    case (state)
+      S0: if (data == 8'b10101010) next_state = S4; else next_state = S1;
+      S1: if (data[6:0] == 7'b0101010) next_state = S3; else if (data == 8'b10101010) next_state = S4; else next_state = S1;
+      S2: if (data[4:0] == 5'b10101) next_state = S3; else if (data == 8'b10101010) next_state = S4; else next_state = S1;
+      S3: if (data == 8'b10101010) next_state = S4; else if (data[6:0] == 7'b0101010) next_state = S3; else if (data[4:0] == 5'b10101) next_state = S3; else next_state = S1;
+      S4: next_state = S4;
+    endcase
+  end
+  
+endmodule
+
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+
+module RefModule (
+  input clk,
+  input reset,
+  input data,
+  output reg shift_ena,
+  output reg counting,
+  input done_counting,
+  output reg done,
+  input ack
+);
+
+  typedef enum logic[3:0] {
+    S, S1, S11, S110, B0, B1, B2, B3, Count, Wait
+  } States;
+
+  States state, next;
+
+  always_comb begin
+    case (state)
+      S: next = States'(data ? S1: S);
+      S1: next = States'(data ? S11: S);
+      S11: next = States'(data ? S11 : S110);
+      S110: next = States'(data ? B0 : S);
+      B0: next = B1;
+      B1: next = B2;
+      B2: next = B3;
+      B3: next = Count;
+      Count: next = States'(done_counting ? Wait : Count);
+      Wait: next = States'(ack ? S : Wait);
+      default: next = States'(4'bx);
+    endcase
+  end
+
+  always @(posedge clk) begin
+    if (reset) state <= S;
+    else state <= next;
+  end
+
+  always_comb begin
+    shift_ena = 0; counting = 0; done = 0;
+    if (state == B0 || state == B1 || state == B2 || state == B3)
+      shift_ena = 1;
+    if (state == Count)
+      counting = 1;
+    if (state == Wait)
+      done = 1;
+
+    if (|state === 1'bx) begin
+      {shift_ena, counting, done} = 'x;
+    end
+
+  end
+
+endmodule
+
+
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module my_module(
+    input aclk,
+    input sel_first_i,
+    input sel_first_reg_2,
+    input [3:0] O,
+    input sel_first_reg_3,
+    input sel_first_reg_4,
+    input [0:0] state_reg_0,
+    input [0:0] m_payload_i_reg_47,
+    input [0:0] E,
+    input [21:0] m_payload_i_reg_51,
+    input [1:0] state_reg_1,
+    input si_rs_arvalid,
+    input [0:0] m_payload_i_reg_47_0,
+    input [0:0] state_reg_1_rep,
+    input [0:0] m_payload_i_reg_48,
+    input [3:0] m_payload_i_reg_3,
+    input [3:0] m_payload_i_reg_11,
+    input [0:0] m_payload_i_reg_38,
+    input [3:0] axaddr_offset_r_reg_3_0,
+    input [0:0] m_payload_i_reg_35,
+    input [0:0] m_valid_i_reg,
+    input [3:0] D,
+    input [3:0] axaddr_offset_r_reg_3_1,
+    input [3:0] wrap_second_len_r_reg_3_0,
+    input [2:0] wrap_second_len_r_reg_3_1,
+    input [6:0] m_payload_i_reg_6,
+    output sel_first_reg_0,
+    output [3:0] axaddr_incr_reg_3,
+    output [11:0] axaddr_incr_reg_11,
+    output sel_first_reg_1,
+    output [3:0] Q,
+    output axlen_cnt_reg_7,
+    output next_pending_r_reg,
+    output r_rlast,
+    output [0:0] state_reg_0_rep,
+    output axlen_cnt_reg_5,
+    output [11:0] m_axi_araddr,
+    output [3:0] wrap_second_len_r_reg_3,
+    output [3:0] axaddr_offset_r_reg_3,
+    output [3:0] S,
+    output m_axi_arready
+);
+
+  // your code here
+
+endmodule
+```
+

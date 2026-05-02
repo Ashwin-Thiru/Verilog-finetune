@@ -1,0 +1,142 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module ripple_carry_adder(
+    input [3:0] A,
+    input [3:0] B,
+    input CIN,
+    output [3:0] SUM,
+    output COUT
+);
+
+    wire [3:0] adder_out;
+    wire [3:0] carry_out;
+
+    // Instantiate full adders
+    full_adder fa0(.A(A[0]), .B(B[0]), .CIN(CIN), .SUM(adder_out[0]), .COUT(carry_out[0]));
+    full_adder fa1(.A(A[1]), .B(B[1]), .CIN(carry_out[0]), .SUM(adder_out[1]), .COUT(carry_out[1]));
+    full_adder fa2(.A(A[2]), .B(B[2]), .CIN(carry_out[1]), .SUM(adder_out[2]), .COUT(carry_out[2]));
+    full_adder fa3(.A(A[3]), .B(B[3]), .CIN(carry_out[2]), .SUM(adder_out[3]), .COUT(COUT));
+
+    assign SUM = adder_out;
+
+endmodule
+
+// Full Adder module
+module full_adder(
+    input A,
+    input B,
+    input CIN,
+    output SUM,
+    output COUT
+);
+
+    wire and1_out;
+    wire and2_out;
+    wire xor1_out;
+
+    and and1(and1_out, A, B);
+    xor xor1(xor1_out, A, B);
+    and and2(and2_out, xor1_out, CIN);
+    xor xor2(SUM, xor1_out, CIN);
+    or or1(COUT, and1_out, and2_out);
+
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module comparator(input [3:0] A, B, C, D, output EQ, GT);
+
+  wire a_greater_b, c_greater_d;
+  
+  assign a_greater_b = (A > B);
+  assign c_greater_d = (C > D);
+  
+  assign EQ = (A == B) && (B == C) && (C == D);
+  
+  assign GT = (a_greater_b || ((A == B) && c_greater_d));
+  
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module mux_2to1(
+    input A,
+    input B,
+    input S,
+    output Y
+);
+
+assign Y = (S == 1) ? B : A;
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module full_adder (input a, input b, input cin, output sum, output cout);
+    assign sum = a ^ b ^ cin;
+    assign cout = (a & b) | (a & cin) | (b & cin);
+endmodule
+
+module four_bit_adder (input [3:0] A, input [3:0] B, input Cin, output [3:0] S, output Cout);
+    
+    wire [3:0] carry;
+    wire [3:0] sum;
+    
+    full_adder fa0(A[0], B[0], Cin, sum[0], carry[0]);
+    full_adder fa1(A[1], B[1], carry[0], sum[1], carry[1]);
+    full_adder fa2(A[2], B[2], carry[1], sum[2], carry[2]);
+    full_adder fa3(A[3], B[3], carry[2], sum[3], Cout);
+    
+    assign S = sum;
+    
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module mux4 (
+    EN,
+    SEL,
+    D0,
+    D1,
+    D2,
+    D3,
+    Y
+);
+
+    // Module ports
+    input  EN ;
+    input  [1:0] SEL;
+    input  D0 ;
+    input  D1 ;
+    input  D2 ;
+    input  D3 ;
+    output Y  ;
+
+    // Local signals
+    wire [1:0] sel_inv;
+    wire [3:0] mux_out;
+
+    // Invert SEL signal
+    assign sel_inv[0] = ~SEL[0];
+    assign sel_inv[1] = ~SEL[1];
+
+    // Mux implementation
+    assign mux_out[0] = D0;
+    assign mux_out[1] = D1;
+    assign mux_out[2] = D2;
+    assign mux_out[3] = D3;
+
+    assign Y = (EN == 0) ? 1'b0 : mux_out[sel_inv];
+
+endmodule
+```
+

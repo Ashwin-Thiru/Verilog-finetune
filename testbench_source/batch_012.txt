@@ -1,0 +1,411 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module mealy_state_machine (
+  input clk,
+  input reset,
+  input data_in,
+  input enable,
+  output reg data_out,
+  output reg valid_out
+);
+
+  // Define the states using one-hot encoding
+  parameter S0 = 4'b0001;
+  parameter S1 = 4'b0010;
+  parameter S2 = 4'b0100;
+  parameter S3 = 4'b1000;
+  
+  // Define the state register and next state logic
+  reg [3:0] state, next_state;
+  always @(posedge clk, posedge reset) begin
+    if (reset) begin
+      state <= S0;
+    end else begin
+      state <= next_state;
+    end
+  end
+  
+  // Define the output logic
+  always @(*) begin
+    case(state)
+      S0: begin
+        if (data_in) begin
+          next_state = S0;
+          data_out = 0;
+        end else if (enable) begin
+          next_state = S1;
+          data_out = 0;
+        end
+      end
+      S1: begin
+        if (data_in) begin
+          next_state = S0;
+          data_out = 0;
+        end else if (enable) begin
+          next_state = S2;
+          data_out = 0;
+        end
+      end
+      S2: begin
+        if (data_in) begin
+          next_state = S0;
+          data_out = 1;
+        end else if (enable) begin
+          next_state = S3;
+          data_out = 0;
+        end
+      end
+      S3: begin
+        if (data_in) begin
+          next_state = S0;
+          data_out = 0;
+        end else if (enable) begin
+          next_state = S0;
+          data_out = 0;
+        end
+      end
+    endcase
+    
+    // Define the valid output signal
+    if (state == S2 && data_in) begin
+      valid_out = 1;
+    end else begin
+      valid_out = 0;
+    end
+  end
+
+endmodule
+
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module binary_counter (
+    input clk,
+    input reset,      // Synchronous active-high reset
+    output reg [3:0] q);
+
+    // Define states
+    parameter [1:0] S0 = 2'b00;
+    parameter [1:0] S1 = 2'b01;
+    parameter [1:0] S2 = 2'b10;
+    parameter [1:0] S3 = 2'b11;
+
+    // Define state register and next state logic
+    reg [1:0] state, next_state;
+    always @ (posedge clk, posedge reset) begin
+        if (reset) begin
+            state <= S0;
+        end else begin
+            state <= next_state;
+        end
+    end
+
+    // Define output logic
+    always @ (state) begin
+        case (state)
+            S0: q <= 4'b0000;
+            S1: q <= 4'b0001;
+            S2: q <= 4'b0010;
+            S3: q <= 4'b0011;
+        endcase
+    end
+
+    // Define next state logic
+    always @ (state) begin
+        case (state)
+            S0: next_state <= S1;
+            S1: next_state <= S2;
+            S2: next_state <= S3;
+            S3: next_state <= S0;
+        endcase
+    end
+
+endmodule
+
+module top_module (
+    input clk,
+    input reset,      // Synchronous active-high reset
+    output [3:0] q);
+
+    binary_counter counter (
+        .clk(clk),
+        .reset(reset),
+        .q(q)
+    );
+
+endmodule
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+module fsm_ADC
+(
+	// User Interface
+	input 			       clk,
+	input 			       rst,
+	input 			       rd,
+	input 			       wr,
+	input	       [6:0]   addr,
+	input          [15:0]  data_in,
+	output	reg    [15:0]  data_out,
+	output	reg		       valid,
+	// XADC ports
+    input                  jtaglocked,
+	input 			       busy,
+	input 			       drdy,
+	input 			       eoc,
+	input                  eos,
+	input          [4:0]   channel,
+	input          [15:0]  dout,
+	output 	reg            dwe,
+	output 	reg            den,
+	output 	reg    [6:0]   daddr,
+	output 	reg    [15:0]  din
+);
+
+parameter [1:0]
+	IDLE 	= 2'b00,
+	WRITE 	= 2'b01,
+	READ 	= 2'b10;
+
+reg [1:0] state;
+
+initial begin
+	state <= IDLE;
+	din <= 16'h0000;
+	daddr <= 7'h00;
+	den <= 1'b0;
+	dwe <= 1'b0;
+	valid <= 1'b0;
+	data_out <= 16'h0000;
+end
+
+always@(posedge clk or posedge rst) begin
+	if(rst)
+		state <= IDLE;
+		
+	else begin
+		case(state)
+			IDLE: begin
+				din <= 16'h0000;
+				daddr <= 7'h00;
+				den <= 1'b0;
+				dwe <= 1'b0;
+				valid <= 1'b0;
+				data_out <= 16'h0000;
+				if(!busy) begin
+					if(eoc || eos) begin
+						if(rd && !wr) begin
+							den <= 1'b1;
+							dwe <= 1'b0;
+							daddr <= 7'h03;
+							state <= READ;
+						end
+						else if(wr && !rd) begin
+							den <= 1'b1;
+							dwe <= 1'b1;
+							din <= data_in;
+							daddr <= addr;
+							state <= WRITE;
+						end
+					end
+				end
+			end
+			
+			WRITE: begin
+				den <= 1'b0;
+				dwe <= 1'b0;
+				if(drdy) begin
+					valid <= 1'b1;
+					state <= IDLE;
+				end
+			end
+			
+			READ: begin
+				den <= 1'b0;
+				dwe <= 1'b0;
+				if(drdy) begin
+					data_out <= dout;
+					valid <= 1'b1;
+					state <= IDLE;
+				end
+			end
+		endcase
+	end
+end
+
+endmodule
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module stopwatch(CLOCK_50, KEY, HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, HEX6, HEX7);
+
+	input CLOCK_50;
+	input [1:0] KEY;
+	output [0:6] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, HEX6, HEX7;
+	
+	reg [21:0] count;
+	reg [3:0] hundredths, tenths, ones, tens;
+	reg [1:0] state;
+	reg [1:0] last_key;
+	
+	parameter IDLE = 2'b00;
+	parameter RUNNING = 2'b01;
+	parameter PAUSED = 2'b10;
+	
+	// Clock divider to generate 100 Hz clock
+	reg [24:0] div;
+	wire clk_100hz = (div == 0);
+	always @(posedge CLOCK_50) begin
+		if (div == 249_999) div <= 0;
+		else div <= div + 1;
+	end
+	
+	// Counter to keep track of time
+	always @(posedge clk_100hz) begin
+		if (state == RUNNING) count <= count + 1;
+	end
+	
+	// BCD conversion
+	always @(posedge clk_100hz) begin
+		if (state == RUNNING) begin
+			if (hundredths == 9 && tenths == 9 && ones == 9 && tens == 5) begin
+				hundredths <= 0;
+				tenths <= 0;
+				ones <= 0;
+				tens <= 0;
+			end
+			else if (hundredths == 9 && tenths == 9 && ones == 9) begin
+				hundredths <= 0;
+				tenths <= 0;
+				ones <= 0;
+				tens <= tens + 1;
+			end
+			else if (hundredths == 9 && tenths == 9) begin
+				hundredths <= 0;
+				tenths <= 0;
+				ones <= ones + 1;
+			end
+			else if (hundredths == 9) begin
+				hundredths <= 0;
+				tenths <= tenths + 1;
+			end
+			else hundredths <= hundredths + 1;
+		end
+	end
+	
+	// State machine
+	always @(posedge CLOCK_50) begin
+		case (state)
+			IDLE: begin
+				if (KEY[0] == 1) begin
+					state <= RUNNING;
+					count <= 0;
+					hundredths <= 0;
+					tenths <= 0;
+					ones <= 0;
+					tens <= 0;
+				end
+			end
+			RUNNING: begin
+				if (KEY[1] == 1 && last_key != 1) state <= PAUSED;
+				if (KEY[0] == 1 && last_key != 0) begin
+					state <= IDLE;
+					hundredths <= 0;
+					tenths <= 0;
+					ones <= 0;
+					tens <= 0;
+				end
+			end
+			PAUSED: begin
+				if (KEY[1] == 1 && last_key != 1) state <= RUNNING;
+				if (KEY[0] == 1 && last_key != 0) begin
+					state <= IDLE;
+					hundredths <= 0;
+					tenths <= 0;
+					ones <= 0;
+					tens <= 0;
+				end
+			end
+		endcase
+		last_key <= KEY[1:0];
+	end
+	
+	// Seven-segment decoder
+	seven_segment_decoder seven_segment_decoder_hundredths(hundredths, HEX4);
+	seven_segment_decoder seven_segment_decoder_tenths(tenths, HEX5);
+	seven_segment_decoder seven_segment_decoder_ones(ones, HEX6);
+	seven_segment_decoder seven_segment_decoder_tens(tens, HEX7);
+	
+	// Turn off unused displays
+	assign HEX3 = 7'b0100100;
+	assign HEX2 = 7'b0110000;
+	assign HEX1 = 7'b0110001;
+	assign HEX0 = 7'b0100100;
+	
+endmodule
+
+module seven_segment_decoder(input [3:0] in, output reg [6:0] out);
+	
+	always @(*) begin
+		case (in)
+			4'b0000: out = 7'b1000000; // 0
+			4'b0001: out = 7'b1111001; // 1
+			4'b0010: out = 7'b0100100; // 2
+			4'b0011: out = 7'b0110000; // 3
+			4'b0100: out = 7'b0011001; // 4
+			4'b0101: out = 7'b0010010; // 5
+			4'b0110: out = 7'b0000010; // 6
+			4'b0111: out = 7'b1111000; // 7
+			4'b1000: out = 7'b0000000; // 8
+			4'b1001: out = 7'b0010000; // 9
+			default: out = 7'b1111111; // off
+		endcase
+	end
+	
+endmodule
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module pipelined_JC_counter(
+  input                clk,
+  input                rst_n,
+  output reg  [3:0]    Q
+);
+
+  reg [63:0] shift_reg;
+  reg [3:0]  next_state;
+
+  always @(posedge clk) begin
+    if (!rst_n) begin
+      shift_reg <= 64'b0;
+      Q <= 4'b0;
+      next_state <= 4'b0001;
+    end
+    else begin
+      shift_reg <= {shift_reg[62:0], shift_reg[63] ^ shift_reg[60]};
+      Q <= shift_reg[63:60];
+      next_state <= {next_state[2:0], next_state[3] ^ next_state[0]};
+    end
+  end
+
+  always @(posedge clk) begin
+    if (!rst_n) begin
+      Q <= 4'b0;
+    end
+    else begin
+      Q <= next_state;
+    end
+  end
+
+endmodule
+```
+

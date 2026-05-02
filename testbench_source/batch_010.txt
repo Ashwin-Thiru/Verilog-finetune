@@ -1,0 +1,316 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module vending_machine(
+  input clk, // system clock
+  input btn_a, // button A
+  input btn_b, // button B
+  input btn_c, // button C
+  input coin_slot, // 25-cent coin slot
+  output reg item_x, // dispensed item X
+  output reg item_y, // dispensed item Y
+  output reg item_z, // dispensed item Z
+  output reg out_of_stock // machine is out of stock
+);
+
+  reg [1:0] state; // state machine state
+  reg [3:0] stock_x = 4; // initial stock of item X
+  reg [2:0] stock_y = 3; // initial stock of item Y
+  reg [2:0] stock_z = 3; // initial stock of item Z
+  reg [7:0] total_money = 0; // total money inserted
+  
+  parameter IDLE = 2'b00; // state machine states
+  parameter BUTTON_PRESSED = 2'b01;
+  parameter ITEM_DISPENSED = 2'b10;
+  
+  always @(posedge clk) begin
+    case(state)
+      IDLE: begin
+        if(btn_a || btn_b || btn_c) begin
+          state <= BUTTON_PRESSED;
+        end
+      end
+      BUTTON_PRESSED: begin
+        if(coin_slot) begin
+          total_money <= total_money + 25;
+          state <= ITEM_DISPENSED;
+        end else if(!btn_a && !btn_b && !btn_c) begin
+          state <= IDLE;
+        end
+      end
+      ITEM_DISPENSED: begin
+        if(total_money >= 75) begin
+          if(btn_a && stock_x > 0) begin
+            item_x <= 1;
+            stock_x <= stock_x - 1;
+            total_money <= total_money - 75;
+          end else if(btn_b && stock_y > 0) begin
+            item_y <= 1;
+            stock_y <= stock_y - 1;
+            total_money <= total_money - 75;
+          end else if(btn_c && stock_z > 0) begin
+            item_z <= 1;
+            stock_z <= stock_z - 1;
+            total_money <= total_money - 75;
+          end
+          state <= IDLE;
+        end else if(!coin_slot) begin
+          state <= BUTTON_PRESSED;
+        end
+      end
+    endcase
+  end
+  
+  always @(stock_x, stock_y, stock_z) begin
+    if(stock_x == 0 && stock_y == 0 && stock_z == 0) begin
+      out_of_stock <= 1;
+    end else begin
+      out_of_stock <= 0;
+    end
+  end
+  
+endmodule
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module memory_arbiter (
+  input clk,
+  input reset,
+  input [n-1:0] req,
+  output [n-1:0] grant
+);
+
+parameter n = 4; // number of request signals
+
+// Define the states for the state machine
+localparam IDLE = 2'b00;
+localparam REQUEST = 2'b01;
+localparam GRANT = 2'b10;
+
+reg [1:0] state; // state register
+reg [n-1:0] req_priority; // priority encoder output
+reg [n-1:0] req_valid; // valid request register
+reg [n-1:0] grant_valid; // valid grant register
+reg [n-1:0] grant_priority; // priority encoder output
+
+always @(posedge clk) begin
+  if (reset) begin
+    state <= IDLE;
+    req_priority <= 0;
+    req_valid <= 0;
+    grant_valid <= 0;
+    grant_priority <= 0;
+  end else begin
+    case (state)
+      IDLE: begin
+        // Check for valid requests
+        if (|req) begin
+          state <= REQUEST;
+        end
+      end
+      REQUEST: begin
+        // Determine the priority of the requests
+        req_priority <= $priority(req);
+        req_valid <= req;
+        state <= GRANT;
+      end
+      GRANT: begin
+        // Determine the priority of the grants
+        grant_priority <= $priority(grant_valid);
+        // Grant access to the highest priority request
+        grant_valid <= grant_valid | (req_valid & (req_priority == grant_priority));
+        // Return to idle state if no valid requests
+        if (~|req_valid) begin
+          state <= IDLE;
+        end
+      end
+    endcase
+  end
+end
+
+// Assign the grant signals based on the grant_valid register
+assign grant = grant_valid;
+
+endmodule
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+module MIB_DDR_SDRAM (
+  input clk,
+  input rst,
+  input en,
+  input [31:0] addr,
+  input [31:0] data_in,
+  input wr,
+  input rd,
+  input burst,
+  input [7:0] burst_len,
+  input burst_type,
+  output [31:0] data_out
+);
+
+  // Internal signals
+  reg [31:0] mem [0:1023];
+  reg [31:0] data_out_reg;
+  reg [7:0] burst_count;
+  reg [31:0] burst_addr;
+  reg [1:0] burst_state;
+  
+  // Constants
+  localparam IDLE = 2'b00;
+  localparam READ = 2'b01;
+  localparam WRITE = 2'b10;
+  
+  // State machine
+  reg [1:0] state;
+  always @(posedge clk, posedge rst) begin
+    if (rst) begin
+      state <= IDLE;
+      burst_count <= 0;
+      burst_state <= IDLE;
+    end else if (en) begin
+      case (state)
+        IDLE: begin
+          if (wr) begin
+            mem[addr] <= data_in;
+          end
+          if (rd) begin
+            data_out_reg <= mem[addr];
+          end
+          if (burst) begin
+            burst_count <= burst_len;
+            burst_addr <= addr;
+            burst_state <= READ;
+            state <= READ;
+          end else begin
+            state <= IDLE;
+          end
+        end
+        READ: begin
+          if (burst_type) begin // Interleaved burst
+            if (burst_count == 0) begin
+              state <= IDLE;
+            end else begin
+              data_out_reg <= mem[burst_addr];
+              burst_addr <= burst_addr + 1;
+              burst_count <= burst_count - 1;
+            end
+          end else begin // Sequential burst
+            if (burst_count == 0) begin
+              state <= IDLE;
+            end else begin
+              data_out_reg <= mem[burst_addr];
+              burst_addr <= burst_addr + 1;
+              burst_count <= burst_count - 1;
+              burst_state <= WRITE;
+              state <= WRITE;
+            end
+          end
+        end
+        WRITE: begin
+          mem[burst_addr] <= data_in;
+          if (burst_count == 0) begin
+            state <= IDLE;
+          end else begin
+            burst_addr <= burst_addr + 1;
+            burst_count <= burst_count - 1;
+            burst_state <= READ;
+            state <= READ;
+          end
+        end
+      endcase
+    end
+  end
+  
+  // Output
+  assign data_out = data_out_reg;
+  
+endmodule
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module ring_counter (
+  input clk,
+  output [n-1:0] out
+);
+
+parameter n = 4; // number of output signals
+
+reg [n-1:0] counter;
+
+always @(posedge clk) begin
+  counter <= {counter[n-2:0], counter[n-1]};
+end
+
+assign out = counter;
+
+endmodule
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module fsm_3input_1output (
+  input clk,
+  input reset,
+  input a,
+  input b,
+  input c,
+  output reg d
+);
+
+  reg [1:0] state, next_state;
+
+  parameter S0 = 2'b00, S1 = 2'b01;
+
+  always @(posedge clk, posedge reset) begin
+    if (reset) begin
+      state <= S0;
+    end else begin
+      state <= next_state;
+    end
+  end
+
+  always @* begin
+    case (state)
+      S0: begin
+        if (a & ~b & ~c) begin
+          next_state = S1;
+          d = 1'b0;
+        end else if (~a & ~b & c) begin
+          next_state = S0;
+          d = 1'b0;
+        end else begin
+          next_state = S0;
+          d = 1'b1;
+        end
+      end
+      S1: begin
+        if (~a & ~b & ~c) begin
+          next_state = S0;
+          d = 1'b1;
+        end else if (~a & ~b & c) begin
+          next_state = S1;
+          d = 1'b1;
+        end else begin
+          next_state = S1;
+          d = 1'b0;
+        end
+      end
+      default: begin
+        next_state = S0;
+        d = 1'b0;
+      end
+    endcase
+  end
+
+endmodule
+
+```
+

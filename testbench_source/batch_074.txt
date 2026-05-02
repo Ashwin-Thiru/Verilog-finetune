@@ -1,0 +1,199 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module mux_or (
+    input [3:0] data0,
+    input [3:0] data1,
+    input [3:0] data2,
+    input [3:0] data3,
+    input select,
+    output [3:0] out
+);
+
+    wire [3:0] mux_out1, mux_out2;
+
+    // First 2-to-1 Mux
+    mux2to1 mux1 (
+        .in0(data0),
+        .in1(data1),
+        .sel(select),
+        .out(mux_out1)
+    );
+
+    // Second 2-to-1 Mux
+    mux2to1 mux2 (
+        .in0(data2),
+        .in1(data3),
+        .sel(select),
+        .out(mux_out2)
+    );
+
+    // Bitwise OR functional module
+    or4 or_module (
+        .in0(mux_out1),
+        .in1(mux_out2),
+        .out(out)
+    );
+
+endmodule
+
+// 2-to-1 Mux module
+module mux2to1 (
+    input [3:0] in0,
+    input [3:0] in1,
+    input sel,
+    output [3:0] out
+);
+
+    assign out = sel ? in1 : in0;
+
+endmodule
+
+// Bitwise OR functional module
+module or4 (
+    input [3:0] in0,
+    input [3:0] in1,
+    output [3:0] out
+);
+
+    assign out = in0 | in1;
+
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module adder_with_overflow (
+    input [7:0] a,
+    input [7:0] b,
+    output [7:0] s,
+    output overflow
+);
+
+    wire [7:0] c;
+    wire [7:0] g;
+    wire [7:0] p;
+
+    assign g = a & b;
+    assign p = a | b;
+
+    assign c[0] = g[0];
+    assign c[1] = g[1] | (p[1] & g[0]);
+    assign c[2] = g[2] | (p[2] & g[1]) | (p[2] & p[1] & g[0]);
+    assign c[3] = g[3] | (p[3] & g[2]) | (p[3] & p[2] & g[1]) | (p[3] & p[2] & p[1] & g[0]);
+    assign c[4] = g[4] | (p[4] & g[3]) | (p[4] & p[3] & g[2]) | (p[4] & p[3] & p[2] & g[1]) | (p[4] & p[3] & p[2] & p[1] & g[0]);
+    assign c[5] = g[5] | (p[5] & g[4]) | (p[5] & p[4] & g[3]) | (p[5] & p[4] & p[3] & g[2]) | (p[5] & p[4] & p[3] & p[2] & g[1]) | (p[5] & p[4] & p[3] & p[2] & p[1] & g[0]);
+    assign c[6] = g[6] | (p[6] & g[5]) | (p[6] & p[5] & g[4]) | (p[6] & p[5] & p[4] & g[3]) | (p[6] & p[5] & p[4] & p[3] & g[2]) | (p[6] & p[5] & p[4] & p[3] & p[2] & g[1]) | (p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]);
+    assign c[7] = g[7] | (p[7] & g[6]) | (p[7] & p[6] & g[5]) | (p[7] & p[6] & p[5] & g[4]) | (p[7] & p[6] & p[5] & p[4] & g[3]) | (p[7] & p[6] & p[5] & p[4] & p[3] & g[2]) | (p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & g[1]) | (p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]);
+
+    assign s = a + b + {1'b0, c[7:0]};
+    assign overflow = (a[7] == b[7]) && (a[7] != s[7]);
+
+endmodule
+
+module top_module (
+    input [7:0] a,
+    input [7:0] b,
+    output [7:0] s,
+    output overflow
+);
+
+    adder_with_overflow adder(a, b, s, overflow);
+
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module nor4b (
+    Y  ,
+    Y_N,
+    A  ,
+    B  ,
+    C  ,
+    D_N
+);
+
+    // Module ports
+    output Y  ;
+    output Y_N;
+    input  A  ;
+    input  B  ;
+    input  C  ;
+    input  D_N;
+
+    // Local signals
+    wire not0_out  ;
+    wire nor0_out_Y;
+
+    // Implement NOT gate using built-in "not" primitive
+    not not0 (not0_out, D_N);
+
+    // Implement NOR gate using built-in "nor" primitive
+    nor nor0 (nor0_out_Y, A, B, C, not0_out);
+
+    // Implement buffer to invert output of NOR gate
+    buf buf0 (Y, nor0_out_Y);
+    not not1 (Y_N, Y);
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module my_module (
+    X ,
+    A1,
+    A2,
+    A3,
+    B1
+);
+
+    output X ;
+    input  A1;
+    input  A2;
+    input  A3;
+    input  B1;
+
+    // Voltage supply signals
+    supply1 VPWR;
+    supply0 VGND;
+    supply1 VPB ;
+    supply0 VNB ;
+
+    wire and1;
+    wire and2;
+    wire or1;
+
+    assign and1 = A1 & A2;
+    assign and2 = A2 & A3;
+    assign or1 = and1 | and2;
+
+    assign X = (B1) ? 1'b0 : or1;
+
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module adder(
+  input [7:0] A,
+  input [7:0] B,
+  output [7:0] S,
+  output C
+);
+
+  wire [8:0] sum;
+  
+  assign sum = A + B;
+  
+  assign S = sum[7:0];
+  assign C = sum[8];
+  
+endmodule
+```
+

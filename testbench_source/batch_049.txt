@@ -1,0 +1,1151 @@
+MODULE 1:
+Topic: pipeline
+```verilog
+module four_bit_adder (
+    input [3:0] A,
+    input [3:0] B,
+    input Cin,
+    output [3:0] S,
+    output Cout
+);
+
+    wire [3:0] sum;
+    wire Cout1, Cout2, Cout3;
+
+    // First adder stage
+    full_adder FA1 (.A(A[0]), .B(B[0]), .Cin(Cin), .S(sum[0]), .Cout(Cout1));
+
+    // Second adder stage
+    full_adder FA2 (.A(A[1]), .B(B[1]), .Cin(Cout1), .S(sum[1]), .Cout(Cout2));
+
+    // Third adder stage
+    full_adder FA3 (.A(A[2]), .B(B[2]), .Cin(Cout2), .S(sum[2]), .Cout(Cout3));
+
+    // Fourth adder stage
+    full_adder FA4 (.A(A[3]), .B(B[3]), .Cin(Cout3), .S(sum[3]), .Cout(Cout));
+
+    assign S = sum;
+
+endmodule
+
+module full_adder (
+    input A,
+    input B,
+    input Cin,
+    output S,
+    output Cout
+);
+
+    wire sum1, sum2, sum3;
+
+    // XOR gates
+    assign sum1 = A ^ B;
+    assign sum2 = sum1 ^ Cin;
+
+    // AND gates
+    assign Cout = (A & B) | (Cin & sum1);
+    assign S = sum2;
+
+endmodule
+```
+
+MODULE 2:
+Topic: pipeline
+```verilog
+module accu(
+    input               clk         ,   
+    input               rst_n       ,
+    input       [7:0]   data_in     ,
+    input               valid_a     ,
+    input               ready_b     ,
+ 
+    output              ready_a     ,
+    output  reg         valid_b     ,
+    output  reg [9:0]   data_out
+);
+
+    reg [7:0] acc_reg;
+    reg [2:0] count_reg;
+    reg [9:0] pipe_reg;
+    wire [2:0] next_count;
+    wire [9:0] next_pipe;
+    
+    assign next_count = (count_reg == 2'b111) ? 3'b000 : count_reg + 1'b1;
+    assign next_pipe = (count_reg == 2'b111) ? {2'b0, acc_reg} : pipe_reg;
+    
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            acc_reg <= 8'b0;
+            count_reg <= 3'b0;
+            pipe_reg <= 10'b0;
+            valid_b <= 1'b0;
+            data_out <= 10'b0;
+        end
+        else begin
+            acc_reg <= (valid_a) ? acc_reg + data_in : acc_reg;
+            count_reg <= (valid_a) ? next_count : count_reg;
+            pipe_reg <= next_pipe;
+            valid_b <= (count_reg == 3'b111) ? 1'b1 : 1'b0;
+            data_out <= (count_reg == 3'b111) ? pipe_reg : 10'b0;
+        end
+    end
+    
+    assign ready_a = ~valid_b & ready_b;
+    
+endmodule
+```
+
+MODULE 3:
+Topic: pipeline
+```verilog
+module BasicDispatcher(	// @[dispatch.scala:43:7]
+  input         clock,	// @[dispatch.scala:43:7]
+  input         reset,	// @[dispatch.scala:43:7]
+  output        io_ren_uops_0_ready,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_valid,	// @[dispatch.scala:36:14]
+  input  [6:0]  io_ren_uops_0_bits_uopc,	// @[dispatch.scala:36:14]
+  input  [31:0] io_ren_uops_0_bits_inst,	// @[dispatch.scala:36:14]
+  input  [31:0] io_ren_uops_0_bits_debug_inst,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_rvc,	// @[dispatch.scala:36:14]
+  input  [39:0] io_ren_uops_0_bits_debug_pc,	// @[dispatch.scala:36:14]
+  input  [2:0]  io_ren_uops_0_bits_iq_type,	// @[dispatch.scala:36:14]
+  input  [9:0]  io_ren_uops_0_bits_fu_code,	// @[dispatch.scala:36:14]
+  input  [3:0]  io_ren_uops_0_bits_ctrl_br_type,	// @[dispatch.scala:36:14]
+  input  [1:0]  io_ren_uops_0_bits_ctrl_op1_sel,	// @[dispatch.scala:36:14]
+  input  [2:0]  io_ren_uops_0_bits_ctrl_op2_sel,	// @[dispatch.scala:36:14]
+  input  [2:0]  io_ren_uops_0_bits_ctrl_imm_sel,	// @[dispatch.scala:36:14]
+  input  [4:0]  io_ren_uops_0_bits_ctrl_op_fcn,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_ctrl_fcn_dw,	// @[dispatch.scala:36:14]
+  input  [2:0]  io_ren_uops_0_bits_ctrl_csr_cmd,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_ctrl_is_load,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_ctrl_is_sta,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_ctrl_is_std,	// @[dispatch.scala:36:14]
+  input  [1:0]  io_ren_uops_0_bits_iw_state,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_iw_p1_poisoned,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_iw_p2_poisoned,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_br,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_jalr,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_jal,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_sfb,	// @[dispatch.scala:36:14]
+  input  [7:0]  io_ren_uops_0_bits_br_mask,	// @[dispatch.scala:36:14]
+  input  [2:0]  io_ren_uops_0_bits_br_tag,	// @[dispatch.scala:36:14]
+  input  [3:0]  io_ren_uops_0_bits_ftq_idx,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_edge_inst,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_pc_lob,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_taken,	// @[dispatch.scala:36:14]
+  input  [19:0] io_ren_uops_0_bits_imm_packed,	// @[dispatch.scala:36:14]
+  input  [11:0] io_ren_uops_0_bits_csr_addr,	// @[dispatch.scala:36:14]
+  input  [4:0]  io_ren_uops_0_bits_rob_idx,	// @[dispatch.scala:36:14]
+  input  [2:0]  io_ren_uops_0_bits_ldq_idx,	// @[dispatch.scala:36:14]
+  input  [2:0]  io_ren_uops_0_bits_stq_idx,	// @[dispatch.scala:36:14]
+  input  [1:0]  io_ren_uops_0_bits_rxq_idx,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_pdst,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_prs1,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_prs2,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_prs3,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_prs1_busy,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_prs2_busy,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_prs3_busy,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_stale_pdst,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_exception,	// @[dispatch.scala:36:14]
+  input  [63:0] io_ren_uops_0_bits_exc_cause,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_bypassable,	// @[dispatch.scala:36:14]
+  input  [4:0]  io_ren_uops_0_bits_mem_cmd,	// @[dispatch.scala:36:14]
+  input  [1:0]  io_ren_uops_0_bits_mem_size,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_mem_signed,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_fence,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_fencei,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_amo,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_uses_ldq,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_uses_stq,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_sys_pc2epc,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_is_unique,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_flush_on_commit,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_ldst_is_rs1,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_ldst,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_lrs1,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_lrs2,	// @[dispatch.scala:36:14]
+  input  [5:0]  io_ren_uops_0_bits_lrs3,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_ldst_val,	// @[dispatch.scala:36:14]
+  input  [1:0]  io_ren_uops_0_bits_dst_rtype,	// @[dispatch.scala:36:14]
+  input  [1:0]  io_ren_uops_0_bits_lrs1_rtype,	// @[dispatch.scala:36:14]
+  input  [1:0]  io_ren_uops_0_bits_lrs2_rtype,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_frs3_en,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_fp_val,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_fp_single,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_xcpt_pf_if,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_xcpt_ae_if,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_xcpt_ma_if,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_bp_debug_if,	// @[dispatch.scala:36:14]
+  input         io_ren_uops_0_bits_bp_xcpt_if,	// @[dispatch.scala:36:14]
+  input  [1:0]  io_ren_uops_0_bits_debug_fsrc,	// @[dispatch.scala:36:14]
+  input  [1:0]  io_ren_uops_0_bits_debug_tsrc,	// @[dispatch.scala:36:14]
+  input         io_dis_uops_2_0_ready,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_valid,	// @[dispatch.scala:36:14]
+  output [6:0]  io_dis_uops_2_0_bits_uopc,	// @[dispatch.scala:36:14]
+  output [31:0] io_dis_uops_2_0_bits_inst,	// @[dispatch.scala:36:14]
+  output [31:0] io_dis_uops_2_0_bits_debug_inst,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_rvc,	// @[dispatch.scala:36:14]
+  output [39:0] io_dis_uops_2_0_bits_debug_pc,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_2_0_bits_iq_type,	// @[dispatch.scala:36:14]
+  output [9:0]  io_dis_uops_2_0_bits_fu_code,	// @[dispatch.scala:36:14]
+  output [3:0]  io_dis_uops_2_0_bits_ctrl_br_type,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_2_0_bits_ctrl_op1_sel,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_2_0_bits_ctrl_op2_sel,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_2_0_bits_ctrl_imm_sel,	// @[dispatch.scala:36:14]
+  output [4:0]  io_dis_uops_2_0_bits_ctrl_op_fcn,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_ctrl_fcn_dw,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_2_0_bits_ctrl_csr_cmd,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_ctrl_is_load,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_ctrl_is_sta,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_ctrl_is_std,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_2_0_bits_iw_state,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_iw_p1_poisoned,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_iw_p2_poisoned,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_br,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_jalr,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_jal,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_sfb,	// @[dispatch.scala:36:14]
+  output [7:0]  io_dis_uops_2_0_bits_br_mask,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_2_0_bits_br_tag,	// @[dispatch.scala:36:14]
+  output [3:0]  io_dis_uops_2_0_bits_ftq_idx,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_edge_inst,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_pc_lob,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_taken,	// @[dispatch.scala:36:14]
+  output [19:0] io_dis_uops_2_0_bits_imm_packed,	// @[dispatch.scala:36:14]
+  output [11:0] io_dis_uops_2_0_bits_csr_addr,	// @[dispatch.scala:36:14]
+  output [4:0]  io_dis_uops_2_0_bits_rob_idx,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_2_0_bits_ldq_idx,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_2_0_bits_stq_idx,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_2_0_bits_rxq_idx,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_pdst,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_prs1,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_prs2,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_prs3,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_prs1_busy,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_prs2_busy,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_prs3_busy,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_stale_pdst,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_exception,	// @[dispatch.scala:36:14]
+  output [63:0] io_dis_uops_2_0_bits_exc_cause,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_bypassable,	// @[dispatch.scala:36:14]
+  output [4:0]  io_dis_uops_2_0_bits_mem_cmd,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_2_0_bits_mem_size,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_mem_signed,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_fence,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_fencei,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_amo,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_uses_ldq,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_uses_stq,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_sys_pc2epc,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_is_unique,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_flush_on_commit,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_ldst_is_rs1,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_ldst,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_lrs1,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_lrs2,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_2_0_bits_lrs3,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_ldst_val,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_2_0_bits_dst_rtype,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_2_0_bits_lrs1_rtype,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_2_0_bits_lrs2_rtype,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_frs3_en,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_fp_val,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_fp_single,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_xcpt_pf_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_xcpt_ae_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_xcpt_ma_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_bp_debug_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_2_0_bits_bp_xcpt_if,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_2_0_bits_debug_fsrc,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_2_0_bits_debug_tsrc,	// @[dispatch.scala:36:14]
+  input         io_dis_uops_1_0_ready,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_valid,	// @[dispatch.scala:36:14]
+  output [6:0]  io_dis_uops_1_0_bits_uopc,	// @[dispatch.scala:36:14]
+  output [31:0] io_dis_uops_1_0_bits_inst,	// @[dispatch.scala:36:14]
+  output [31:0] io_dis_uops_1_0_bits_debug_inst,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_rvc,	// @[dispatch.scala:36:14]
+  output [39:0] io_dis_uops_1_0_bits_debug_pc,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_1_0_bits_iq_type,	// @[dispatch.scala:36:14]
+  output [9:0]  io_dis_uops_1_0_bits_fu_code,	// @[dispatch.scala:36:14]
+  output [3:0]  io_dis_uops_1_0_bits_ctrl_br_type,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_1_0_bits_ctrl_op1_sel,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_1_0_bits_ctrl_op2_sel,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_1_0_bits_ctrl_imm_sel,	// @[dispatch.scala:36:14]
+  output [4:0]  io_dis_uops_1_0_bits_ctrl_op_fcn,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_ctrl_fcn_dw,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_1_0_bits_ctrl_csr_cmd,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_ctrl_is_load,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_ctrl_is_sta,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_ctrl_is_std,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_1_0_bits_iw_state,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_iw_p1_poisoned,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_iw_p2_poisoned,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_br,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_jalr,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_jal,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_sfb,	// @[dispatch.scala:36:14]
+  output [7:0]  io_dis_uops_1_0_bits_br_mask,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_1_0_bits_br_tag,	// @[dispatch.scala:36:14]
+  output [3:0]  io_dis_uops_1_0_bits_ftq_idx,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_edge_inst,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_pc_lob,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_taken,	// @[dispatch.scala:36:14]
+  output [19:0] io_dis_uops_1_0_bits_imm_packed,	// @[dispatch.scala:36:14]
+  output [11:0] io_dis_uops_1_0_bits_csr_addr,	// @[dispatch.scala:36:14]
+  output [4:0]  io_dis_uops_1_0_bits_rob_idx,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_1_0_bits_ldq_idx,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_1_0_bits_stq_idx,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_1_0_bits_rxq_idx,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_pdst,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_prs1,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_prs2,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_prs3,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_prs1_busy,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_prs2_busy,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_prs3_busy,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_stale_pdst,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_exception,	// @[dispatch.scala:36:14]
+  output [63:0] io_dis_uops_1_0_bits_exc_cause,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_bypassable,	// @[dispatch.scala:36:14]
+  output [4:0]  io_dis_uops_1_0_bits_mem_cmd,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_1_0_bits_mem_size,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_mem_signed,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_fence,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_fencei,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_amo,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_uses_ldq,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_uses_stq,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_sys_pc2epc,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_is_unique,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_flush_on_commit,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_ldst_is_rs1,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_ldst,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_lrs1,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_lrs2,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_1_0_bits_lrs3,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_ldst_val,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_1_0_bits_dst_rtype,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_1_0_bits_lrs1_rtype,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_1_0_bits_lrs2_rtype,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_frs3_en,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_fp_val,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_fp_single,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_xcpt_pf_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_xcpt_ae_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_xcpt_ma_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_bp_debug_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_1_0_bits_bp_xcpt_if,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_1_0_bits_debug_fsrc,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_1_0_bits_debug_tsrc,	// @[dispatch.scala:36:14]
+  input         io_dis_uops_0_0_ready,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_valid,	// @[dispatch.scala:36:14]
+  output [6:0]  io_dis_uops_0_0_bits_uopc,	// @[dispatch.scala:36:14]
+  output [31:0] io_dis_uops_0_0_bits_inst,	// @[dispatch.scala:36:14]
+  output [31:0] io_dis_uops_0_0_bits_debug_inst,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_rvc,	// @[dispatch.scala:36:14]
+  output [39:0] io_dis_uops_0_0_bits_debug_pc,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_0_0_bits_iq_type,	// @[dispatch.scala:36:14]
+  output [9:0]  io_dis_uops_0_0_bits_fu_code,	// @[dispatch.scala:36:14]
+  output [3:0]  io_dis_uops_0_0_bits_ctrl_br_type,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_0_0_bits_ctrl_op1_sel,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_0_0_bits_ctrl_op2_sel,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_0_0_bits_ctrl_imm_sel,	// @[dispatch.scala:36:14]
+  output [4:0]  io_dis_uops_0_0_bits_ctrl_op_fcn,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_ctrl_fcn_dw,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_0_0_bits_ctrl_csr_cmd,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_ctrl_is_load,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_ctrl_is_sta,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_ctrl_is_std,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_0_0_bits_iw_state,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_iw_p1_poisoned,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_iw_p2_poisoned,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_br,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_jalr,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_jal,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_sfb,	// @[dispatch.scala:36:14]
+  output [7:0]  io_dis_uops_0_0_bits_br_mask,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_0_0_bits_br_tag,	// @[dispatch.scala:36:14]
+  output [3:0]  io_dis_uops_0_0_bits_ftq_idx,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_edge_inst,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_pc_lob,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_taken,	// @[dispatch.scala:36:14]
+  output [19:0] io_dis_uops_0_0_bits_imm_packed,	// @[dispatch.scala:36:14]
+  output [11:0] io_dis_uops_0_0_bits_csr_addr,	// @[dispatch.scala:36:14]
+  output [4:0]  io_dis_uops_0_0_bits_rob_idx,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_0_0_bits_ldq_idx,	// @[dispatch.scala:36:14]
+  output [2:0]  io_dis_uops_0_0_bits_stq_idx,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_0_0_bits_rxq_idx,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_pdst,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_prs1,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_prs2,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_prs3,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_prs1_busy,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_prs2_busy,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_prs3_busy,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_stale_pdst,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_exception,	// @[dispatch.scala:36:14]
+  output [63:0] io_dis_uops_0_0_bits_exc_cause,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_bypassable,	// @[dispatch.scala:36:14]
+  output [4:0]  io_dis_uops_0_0_bits_mem_cmd,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_0_0_bits_mem_size,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_mem_signed,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_fence,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_fencei,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_amo,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_uses_ldq,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_uses_stq,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_sys_pc2epc,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_is_unique,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_flush_on_commit,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_ldst_is_rs1,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_ldst,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_lrs1,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_lrs2,	// @[dispatch.scala:36:14]
+  output [5:0]  io_dis_uops_0_0_bits_lrs3,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_ldst_val,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_0_0_bits_dst_rtype,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_0_0_bits_lrs1_rtype,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_0_0_bits_lrs2_rtype,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_frs3_en,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_fp_val,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_fp_single,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_xcpt_pf_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_xcpt_ae_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_xcpt_ma_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_bp_debug_if,	// @[dispatch.scala:36:14]
+  output        io_dis_uops_0_0_bits_bp_xcpt_if,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_0_0_bits_debug_fsrc,	// @[dispatch.scala:36:14]
+  output [1:0]  io_dis_uops_0_0_bits_debug_tsrc	// @[dispatch.scala:36:14]
+);
+
+  wire        io_ren_uops_0_valid_0 = io_ren_uops_0_valid;	// @[dispatch.scala:43:7]
+  wire [6:0]  io_ren_uops_0_bits_uopc_0 = io_ren_uops_0_bits_uopc;	// @[dispatch.scala:43:7]
+  wire [31:0] io_ren_uops_0_bits_inst_0 = io_ren_uops_0_bits_inst;	// @[dispatch.scala:43:7]
+  wire [31:0] io_ren_uops_0_bits_debug_inst_0 = io_ren_uops_0_bits_debug_inst;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_rvc_0 = io_ren_uops_0_bits_is_rvc;	// @[dispatch.scala:43:7]
+  wire [39:0] io_ren_uops_0_bits_debug_pc_0 = io_ren_uops_0_bits_debug_pc;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_ren_uops_0_bits_iq_type_0 = io_ren_uops_0_bits_iq_type;	// @[dispatch.scala:43:7]
+  wire [9:0]  io_ren_uops_0_bits_fu_code_0 = io_ren_uops_0_bits_fu_code;	// @[dispatch.scala:43:7]
+  wire [3:0]  io_ren_uops_0_bits_ctrl_br_type_0 = io_ren_uops_0_bits_ctrl_br_type;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_ren_uops_0_bits_ctrl_op1_sel_0 = io_ren_uops_0_bits_ctrl_op1_sel;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_ren_uops_0_bits_ctrl_op2_sel_0 = io_ren_uops_0_bits_ctrl_op2_sel;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_ren_uops_0_bits_ctrl_imm_sel_0 = io_ren_uops_0_bits_ctrl_imm_sel;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_ren_uops_0_bits_ctrl_op_fcn_0 = io_ren_uops_0_bits_ctrl_op_fcn;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_ctrl_fcn_dw_0 = io_ren_uops_0_bits_ctrl_fcn_dw;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_ren_uops_0_bits_ctrl_csr_cmd_0 = io_ren_uops_0_bits_ctrl_csr_cmd;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_ctrl_is_load_0 = io_ren_uops_0_bits_ctrl_is_load;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_ctrl_is_sta_0 = io_ren_uops_0_bits_ctrl_is_sta;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_ctrl_is_std_0 = io_ren_uops_0_bits_ctrl_is_std;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_ren_uops_0_bits_iw_state_0 = io_ren_uops_0_bits_iw_state;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_iw_p1_poisoned_0 = io_ren_uops_0_bits_iw_p1_poisoned;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_iw_p2_poisoned_0 = io_ren_uops_0_bits_iw_p2_poisoned;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_br_0 = io_ren_uops_0_bits_is_br;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_jalr_0 = io_ren_uops_0_bits_is_jalr;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_jal_0 = io_ren_uops_0_bits_is_jal;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_sfb_0 = io_ren_uops_0_bits_is_sfb;	// @[dispatch.scala:43:7]
+  wire [7:0]  io_ren_uops_0_bits_br_mask_0 = io_ren_uops_0_bits_br_mask;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_ren_uops_0_bits_br_tag_0 = io_ren_uops_0_bits_br_tag;	// @[dispatch.scala:43:7]
+  wire [3:0]  io_ren_uops_0_bits_ftq_idx_0 = io_ren_uops_0_bits_ftq_idx;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_edge_inst_0 = io_ren_uops_0_bits_edge_inst;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_pc_lob_0 = io_ren_uops_0_bits_pc_lob;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_taken_0 = io_ren_uops_0_bits_taken;	// @[dispatch.scala:43:7]
+  wire [19:0] io_ren_uops_0_bits_imm_packed_0 = io_ren_uops_0_bits_imm_packed;	// @[dispatch.scala:43:7]
+  wire [11:0] io_ren_uops_0_bits_csr_addr_0 = io_ren_uops_0_bits_csr_addr;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_ren_uops_0_bits_rob_idx_0 = io_ren_uops_0_bits_rob_idx;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_ren_uops_0_bits_ldq_idx_0 = io_ren_uops_0_bits_ldq_idx;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_ren_uops_0_bits_stq_idx_0 = io_ren_uops_0_bits_stq_idx;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_ren_uops_0_bits_rxq_idx_0 = io_ren_uops_0_bits_rxq_idx;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_pdst_0 = io_ren_uops_0_bits_pdst;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_prs1_0 = io_ren_uops_0_bits_prs1;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_prs2_0 = io_ren_uops_0_bits_prs2;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_prs3_0 = io_ren_uops_0_bits_prs3;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_prs1_busy_0 = io_ren_uops_0_bits_prs1_busy;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_prs2_busy_0 = io_ren_uops_0_bits_prs2_busy;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_prs3_busy_0 = io_ren_uops_0_bits_prs3_busy;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_stale_pdst_0 = io_ren_uops_0_bits_stale_pdst;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_exception_0 = io_ren_uops_0_bits_exception;	// @[dispatch.scala:43:7]
+  wire [63:0] io_ren_uops_0_bits_exc_cause_0 = io_ren_uops_0_bits_exc_cause;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_bypassable_0 = io_ren_uops_0_bits_bypassable;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_ren_uops_0_bits_mem_cmd_0 = io_ren_uops_0_bits_mem_cmd;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_ren_uops_0_bits_mem_size_0 = io_ren_uops_0_bits_mem_size;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_mem_signed_0 = io_ren_uops_0_bits_mem_signed;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_fence_0 = io_ren_uops_0_bits_is_fence;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_fencei_0 = io_ren_uops_0_bits_is_fencei;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_amo_0 = io_ren_uops_0_bits_is_amo;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_uses_ldq_0 = io_ren_uops_0_bits_uses_ldq;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_uses_stq_0 = io_ren_uops_0_bits_uses_stq;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_sys_pc2epc_0 = io_ren_uops_0_bits_is_sys_pc2epc;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_is_unique_0 = io_ren_uops_0_bits_is_unique;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_flush_on_commit_0 = io_ren_uops_0_bits_flush_on_commit;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_ldst_is_rs1_0 = io_ren_uops_0_bits_ldst_is_rs1;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_ldst_0 = io_ren_uops_0_bits_ldst;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_lrs1_0 = io_ren_uops_0_bits_lrs1;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_lrs2_0 = io_ren_uops_0_bits_lrs2;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_ren_uops_0_bits_lrs3_0 = io_ren_uops_0_bits_lrs3;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_ldst_val_0 = io_ren_uops_0_bits_ldst_val;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_ren_uops_0_bits_dst_rtype_0 = io_ren_uops_0_bits_dst_rtype;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_ren_uops_0_bits_lrs1_rtype_0 = io_ren_uops_0_bits_lrs1_rtype;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_ren_uops_0_bits_lrs2_rtype_0 = io_ren_uops_0_bits_lrs2_rtype;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_frs3_en_0 = io_ren_uops_0_bits_frs3_en;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_fp_val_0 = io_ren_uops_0_bits_fp_val;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_fp_single_0 = io_ren_uops_0_bits_fp_single;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_xcpt_pf_if_0 = io_ren_uops_0_bits_xcpt_pf_if;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_xcpt_ae_if_0 = io_ren_uops_0_bits_xcpt_ae_if;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_xcpt_ma_if_0 = io_ren_uops_0_bits_xcpt_ma_if;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_bp_debug_if_0 = io_ren_uops_0_bits_bp_debug_if;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_bp_xcpt_if_0 = io_ren_uops_0_bits_bp_xcpt_if;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_ren_uops_0_bits_debug_fsrc_0 = io_ren_uops_0_bits_debug_fsrc;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_ren_uops_0_bits_debug_tsrc_0 = io_ren_uops_0_bits_debug_tsrc;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_ready_0 = io_dis_uops_2_0_ready;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_ready_0 = io_dis_uops_1_0_ready;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_ready_0 = io_dis_uops_0_0_ready;	// @[dispatch.scala:43:7]
+  wire        io_ren_uops_0_bits_ppred_busy = 1'h0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_ppred_busy = 1'h0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_ppred_busy = 1'h0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_ppred_busy = 1'h0;	// @[dispatch.scala:43:7]
+  wire [3:0]  io_ren_uops_0_bits_ppred = 4'h0;	// @[dispatch.scala:36:14, :43:7]
+  wire [3:0]  io_dis_uops_2_0_bits_ppred = 4'h0;	// @[dispatch.scala:36:14, :43:7]
+  wire [3:0]  io_dis_uops_1_0_bits_ppred = 4'h0;	// @[dispatch.scala:36:14, :43:7]
+  wire [3:0]  io_dis_uops_0_0_bits_ppred = 4'h0;	// @[dispatch.scala:36:14, :43:7]
+  wire        _io_ren_uops_0_ready_T;	// @[dispatch.scala:50:39]
+  wire [6:0]  io_dis_uops_2_0_bits_uopc_0 = io_ren_uops_0_bits_uopc_0;	// @[dispatch.scala:43:7]
+  wire [6:0]  io_dis_uops_1_0_bits_uopc_0 = io_ren_uops_0_bits_uopc_0;	// @[dispatch.scala:43:7]
+  wire [6:0]  io_dis_uops_0_0_bits_uopc_0 = io_ren_uops_0_bits_uopc_0;	// @[dispatch.scala:43:7]
+  wire [31:0] io_dis_uops_2_0_bits_inst_0 = io_ren_uops_0_bits_inst_0;	// @[dispatch.scala:43:7]
+  wire [31:0] io_dis_uops_1_0_bits_inst_0 = io_ren_uops_0_bits_inst_0;	// @[dispatch.scala:43:7]
+  wire [31:0] io_dis_uops_0_0_bits_inst_0 = io_ren_uops_0_bits_inst_0;	// @[dispatch.scala:43:7]
+  wire [31:0] io_dis_uops_2_0_bits_debug_inst_0 = io_ren_uops_0_bits_debug_inst_0;	// @[dispatch.scala:43:7]
+  wire [31:0] io_dis_uops_1_0_bits_debug_inst_0 = io_ren_uops_0_bits_debug_inst_0;	// @[dispatch.scala:43:7]
+  wire [31:0] io_dis_uops_0_0_bits_debug_inst_0 = io_ren_uops_0_bits_debug_inst_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_rvc_0 = io_ren_uops_0_bits_is_rvc_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_rvc_0 = io_ren_uops_0_bits_is_rvc_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_rvc_0 = io_ren_uops_0_bits_is_rvc_0;	// @[dispatch.scala:43:7]
+  wire [39:0] io_dis_uops_2_0_bits_debug_pc_0 = io_ren_uops_0_bits_debug_pc_0;	// @[dispatch.scala:43:7]
+  wire [39:0] io_dis_uops_1_0_bits_debug_pc_0 = io_ren_uops_0_bits_debug_pc_0;	// @[dispatch.scala:43:7]
+  wire [39:0] io_dis_uops_0_0_bits_debug_pc_0 = io_ren_uops_0_bits_debug_pc_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_2_0_bits_iq_type_0 = io_ren_uops_0_bits_iq_type_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_1_0_bits_iq_type_0 = io_ren_uops_0_bits_iq_type_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_0_0_bits_iq_type_0 = io_ren_uops_0_bits_iq_type_0;	// @[dispatch.scala:43:7]
+  wire [9:0]  io_dis_uops_2_0_bits_fu_code_0 = io_ren_uops_0_bits_fu_code_0;	// @[dispatch.scala:43:7]
+  wire [9:0]  io_dis_uops_1_0_bits_fu_code_0 = io_ren_uops_0_bits_fu_code_0;	// @[dispatch.scala:43:7]
+  wire [9:0]  io_dis_uops_0_0_bits_fu_code_0 = io_ren_uops_0_bits_fu_code_0;	// @[dispatch.scala:43:7]
+  wire [3:0]  io_dis_uops_2_0_bits_ctrl_br_type_0 = io_ren_uops_0_bits_ctrl_br_type_0;	// @[dispatch.scala:43:7]
+  wire [3:0]  io_dis_uops_1_0_bits_ctrl_br_type_0 = io_ren_uops_0_bits_ctrl_br_type_0;	// @[dispatch.scala:43:7]
+  wire [3:0]  io_dis_uops_0_0_bits_ctrl_br_type_0 = io_ren_uops_0_bits_ctrl_br_type_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_2_0_bits_ctrl_op1_sel_0 = io_ren_uops_0_bits_ctrl_op1_sel_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_1_0_bits_ctrl_op1_sel_0 = io_ren_uops_0_bits_ctrl_op1_sel_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_0_0_bits_ctrl_op1_sel_0 = io_ren_uops_0_bits_ctrl_op1_sel_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_2_0_bits_ctrl_op2_sel_0 = io_ren_uops_0_bits_ctrl_op2_sel_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_1_0_bits_ctrl_op2_sel_0 = io_ren_uops_0_bits_ctrl_op2_sel_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_0_0_bits_ctrl_op2_sel_0 = io_ren_uops_0_bits_ctrl_op2_sel_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_2_0_bits_ctrl_imm_sel_0 = io_ren_uops_0_bits_ctrl_imm_sel_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_1_0_bits_ctrl_imm_sel_0 = io_ren_uops_0_bits_ctrl_imm_sel_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_0_0_bits_ctrl_imm_sel_0 = io_ren_uops_0_bits_ctrl_imm_sel_0;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_dis_uops_2_0_bits_ctrl_op_fcn_0 = io_ren_uops_0_bits_ctrl_op_fcn_0;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_dis_uops_1_0_bits_ctrl_op_fcn_0 = io_ren_uops_0_bits_ctrl_op_fcn_0;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_dis_uops_0_0_bits_ctrl_op_fcn_0 = io_ren_uops_0_bits_ctrl_op_fcn_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_ctrl_fcn_dw_0 = io_ren_uops_0_bits_ctrl_fcn_dw_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_ctrl_fcn_dw_0 = io_ren_uops_0_bits_ctrl_fcn_dw_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_ctrl_fcn_dw_0 = io_ren_uops_0_bits_ctrl_fcn_dw_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_2_0_bits_ctrl_csr_cmd_0 = io_ren_uops_0_bits_ctrl_csr_cmd_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_1_0_bits_ctrl_csr_cmd_0 = io_ren_uops_0_bits_ctrl_csr_cmd_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_0_0_bits_ctrl_csr_cmd_0 = io_ren_uops_0_bits_ctrl_csr_cmd_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_ctrl_is_load_0 = io_ren_uops_0_bits_ctrl_is_load_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_ctrl_is_load_0 = io_ren_uops_0_bits_ctrl_is_load_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_ctrl_is_load_0 = io_ren_uops_0_bits_ctrl_is_load_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_ctrl_is_sta_0 = io_ren_uops_0_bits_ctrl_is_sta_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_ctrl_is_sta_0 = io_ren_uops_0_bits_ctrl_is_sta_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_ctrl_is_sta_0 = io_ren_uops_0_bits_ctrl_is_sta_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_ctrl_is_std_0 = io_ren_uops_0_bits_ctrl_is_std_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_ctrl_is_std_0 = io_ren_uops_0_bits_ctrl_is_std_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_ctrl_is_std_0 = io_ren_uops_0_bits_ctrl_is_std_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_2_0_bits_iw_state_0 = io_ren_uops_0_bits_iw_state_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_1_0_bits_iw_state_0 = io_ren_uops_0_bits_iw_state_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_0_0_bits_iw_state_0 = io_ren_uops_0_bits_iw_state_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_iw_p1_poisoned_0 = io_ren_uops_0_bits_iw_p1_poisoned_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_iw_p1_poisoned_0 = io_ren_uops_0_bits_iw_p1_poisoned_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_iw_p1_poisoned_0 = io_ren_uops_0_bits_iw_p1_poisoned_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_iw_p2_poisoned_0 = io_ren_uops_0_bits_iw_p2_poisoned_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_iw_p2_poisoned_0 = io_ren_uops_0_bits_iw_p2_poisoned_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_iw_p2_poisoned_0 = io_ren_uops_0_bits_iw_p2_poisoned_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_br_0 = io_ren_uops_0_bits_is_br_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_br_0 = io_ren_uops_0_bits_is_br_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_br_0 = io_ren_uops_0_bits_is_br_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_jalr_0 = io_ren_uops_0_bits_is_jalr_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_jalr_0 = io_ren_uops_0_bits_is_jalr_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_jalr_0 = io_ren_uops_0_bits_is_jalr_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_jal_0 = io_ren_uops_0_bits_is_jal_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_jal_0 = io_ren_uops_0_bits_is_jal_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_jal_0 = io_ren_uops_0_bits_is_jal_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_sfb_0 = io_ren_uops_0_bits_is_sfb_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_sfb_0 = io_ren_uops_0_bits_is_sfb_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_sfb_0 = io_ren_uops_0_bits_is_sfb_0;	// @[dispatch.scala:43:7]
+  wire [7:0]  io_dis_uops_2_0_bits_br_mask_0 = io_ren_uops_0_bits_br_mask_0;	// @[dispatch.scala:43:7]
+  wire [7:0]  io_dis_uops_1_0_bits_br_mask_0 = io_ren_uops_0_bits_br_mask_0;	// @[dispatch.scala:43:7]
+  wire [7:0]  io_dis_uops_0_0_bits_br_mask_0 = io_ren_uops_0_bits_br_mask_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_2_0_bits_br_tag_0 = io_ren_uops_0_bits_br_tag_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_1_0_bits_br_tag_0 = io_ren_uops_0_bits_br_tag_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_0_0_bits_br_tag_0 = io_ren_uops_0_bits_br_tag_0;	// @[dispatch.scala:43:7]
+  wire [3:0]  io_dis_uops_2_0_bits_ftq_idx_0 = io_ren_uops_0_bits_ftq_idx_0;	// @[dispatch.scala:43:7]
+  wire [3:0]  io_dis_uops_1_0_bits_ftq_idx_0 = io_ren_uops_0_bits_ftq_idx_0;	// @[dispatch.scala:43:7]
+  wire [3:0]  io_dis_uops_0_0_bits_ftq_idx_0 = io_ren_uops_0_bits_ftq_idx_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_edge_inst_0 = io_ren_uops_0_bits_edge_inst_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_edge_inst_0 = io_ren_uops_0_bits_edge_inst_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_edge_inst_0 = io_ren_uops_0_bits_edge_inst_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_pc_lob_0 = io_ren_uops_0_bits_pc_lob_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_pc_lob_0 = io_ren_uops_0_bits_pc_lob_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_pc_lob_0 = io_ren_uops_0_bits_pc_lob_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_taken_0 = io_ren_uops_0_bits_taken_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_taken_0 = io_ren_uops_0_bits_taken_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_taken_0 = io_ren_uops_0_bits_taken_0;	// @[dispatch.scala:43:7]
+  wire [19:0] io_dis_uops_2_0_bits_imm_packed_0 = io_ren_uops_0_bits_imm_packed_0;	// @[dispatch.scala:43:7]
+  wire [19:0] io_dis_uops_1_0_bits_imm_packed_0 = io_ren_uops_0_bits_imm_packed_0;	// @[dispatch.scala:43:7]
+  wire [19:0] io_dis_uops_0_0_bits_imm_packed_0 = io_ren_uops_0_bits_imm_packed_0;	// @[dispatch.scala:43:7]
+  wire [11:0] io_dis_uops_2_0_bits_csr_addr_0 = io_ren_uops_0_bits_csr_addr_0;	// @[dispatch.scala:43:7]
+  wire [11:0] io_dis_uops_1_0_bits_csr_addr_0 = io_ren_uops_0_bits_csr_addr_0;	// @[dispatch.scala:43:7]
+  wire [11:0] io_dis_uops_0_0_bits_csr_addr_0 = io_ren_uops_0_bits_csr_addr_0;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_dis_uops_2_0_bits_rob_idx_0 = io_ren_uops_0_bits_rob_idx_0;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_dis_uops_1_0_bits_rob_idx_0 = io_ren_uops_0_bits_rob_idx_0;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_dis_uops_0_0_bits_rob_idx_0 = io_ren_uops_0_bits_rob_idx_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_2_0_bits_ldq_idx_0 = io_ren_uops_0_bits_ldq_idx_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_1_0_bits_ldq_idx_0 = io_ren_uops_0_bits_ldq_idx_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_0_0_bits_ldq_idx_0 = io_ren_uops_0_bits_ldq_idx_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_2_0_bits_stq_idx_0 = io_ren_uops_0_bits_stq_idx_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_1_0_bits_stq_idx_0 = io_ren_uops_0_bits_stq_idx_0;	// @[dispatch.scala:43:7]
+  wire [2:0]  io_dis_uops_0_0_bits_stq_idx_0 = io_ren_uops_0_bits_stq_idx_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_2_0_bits_rxq_idx_0 = io_ren_uops_0_bits_rxq_idx_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_1_0_bits_rxq_idx_0 = io_ren_uops_0_bits_rxq_idx_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_0_0_bits_rxq_idx_0 = io_ren_uops_0_bits_rxq_idx_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_pdst_0 = io_ren_uops_0_bits_pdst_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_pdst_0 = io_ren_uops_0_bits_pdst_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_pdst_0 = io_ren_uops_0_bits_pdst_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_prs1_0 = io_ren_uops_0_bits_prs1_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_prs1_0 = io_ren_uops_0_bits_prs1_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_prs1_0 = io_ren_uops_0_bits_prs1_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_prs2_0 = io_ren_uops_0_bits_prs2_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_prs2_0 = io_ren_uops_0_bits_prs2_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_prs2_0 = io_ren_uops_0_bits_prs2_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_prs3_0 = io_ren_uops_0_bits_prs3_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_prs3_0 = io_ren_uops_0_bits_prs3_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_prs3_0 = io_ren_uops_0_bits_prs3_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_prs1_busy_0 = io_ren_uops_0_bits_prs1_busy_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_prs1_busy_0 = io_ren_uops_0_bits_prs1_busy_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_prs1_busy_0 = io_ren_uops_0_bits_prs1_busy_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_prs2_busy_0 = io_ren_uops_0_bits_prs2_busy_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_prs2_busy_0 = io_ren_uops_0_bits_prs2_busy_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_prs2_busy_0 = io_ren_uops_0_bits_prs2_busy_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_prs3_busy_0 = io_ren_uops_0_bits_prs3_busy_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_prs3_busy_0 = io_ren_uops_0_bits_prs3_busy_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_prs3_busy_0 = io_ren_uops_0_bits_prs3_busy_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_stale_pdst_0 = io_ren_uops_0_bits_stale_pdst_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_stale_pdst_0 = io_ren_uops_0_bits_stale_pdst_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_stale_pdst_0 = io_ren_uops_0_bits_stale_pdst_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_exception_0 = io_ren_uops_0_bits_exception_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_exception_0 = io_ren_uops_0_bits_exception_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_exception_0 = io_ren_uops_0_bits_exception_0;	// @[dispatch.scala:43:7]
+  wire [63:0] io_dis_uops_2_0_bits_exc_cause_0 = io_ren_uops_0_bits_exc_cause_0;	// @[dispatch.scala:43:7]
+  wire [63:0] io_dis_uops_1_0_bits_exc_cause_0 = io_ren_uops_0_bits_exc_cause_0;	// @[dispatch.scala:43:7]
+  wire [63:0] io_dis_uops_0_0_bits_exc_cause_0 = io_ren_uops_0_bits_exc_cause_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_bypassable_0 = io_ren_uops_0_bits_bypassable_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_bypassable_0 = io_ren_uops_0_bits_bypassable_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_bypassable_0 = io_ren_uops_0_bits_bypassable_0;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_dis_uops_2_0_bits_mem_cmd_0 = io_ren_uops_0_bits_mem_cmd_0;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_dis_uops_1_0_bits_mem_cmd_0 = io_ren_uops_0_bits_mem_cmd_0;	// @[dispatch.scala:43:7]
+  wire [4:0]  io_dis_uops_0_0_bits_mem_cmd_0 = io_ren_uops_0_bits_mem_cmd_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_2_0_bits_mem_size_0 = io_ren_uops_0_bits_mem_size_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_1_0_bits_mem_size_0 = io_ren_uops_0_bits_mem_size_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_0_0_bits_mem_size_0 = io_ren_uops_0_bits_mem_size_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_mem_signed_0 = io_ren_uops_0_bits_mem_signed_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_mem_signed_0 = io_ren_uops_0_bits_mem_signed_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_mem_signed_0 = io_ren_uops_0_bits_mem_signed_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_fence_0 = io_ren_uops_0_bits_is_fence_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_fence_0 = io_ren_uops_0_bits_is_fence_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_fence_0 = io_ren_uops_0_bits_is_fence_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_fencei_0 = io_ren_uops_0_bits_is_fencei_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_fencei_0 = io_ren_uops_0_bits_is_fencei_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_fencei_0 = io_ren_uops_0_bits_is_fencei_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_amo_0 = io_ren_uops_0_bits_is_amo_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_amo_0 = io_ren_uops_0_bits_is_amo_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_amo_0 = io_ren_uops_0_bits_is_amo_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_uses_ldq_0 = io_ren_uops_0_bits_uses_ldq_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_uses_ldq_0 = io_ren_uops_0_bits_uses_ldq_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_uses_ldq_0 = io_ren_uops_0_bits_uses_ldq_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_uses_stq_0 = io_ren_uops_0_bits_uses_stq_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_uses_stq_0 = io_ren_uops_0_bits_uses_stq_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_uses_stq_0 = io_ren_uops_0_bits_uses_stq_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_sys_pc2epc_0 = io_ren_uops_0_bits_is_sys_pc2epc_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_sys_pc2epc_0 = io_ren_uops_0_bits_is_sys_pc2epc_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_sys_pc2epc_0 = io_ren_uops_0_bits_is_sys_pc2epc_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_is_unique_0 = io_ren_uops_0_bits_is_unique_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_is_unique_0 = io_ren_uops_0_bits_is_unique_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_is_unique_0 = io_ren_uops_0_bits_is_unique_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_flush_on_commit_0 = io_ren_uops_0_bits_flush_on_commit_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_flush_on_commit_0 = io_ren_uops_0_bits_flush_on_commit_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_flush_on_commit_0 = io_ren_uops_0_bits_flush_on_commit_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_ldst_is_rs1_0 = io_ren_uops_0_bits_ldst_is_rs1_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_ldst_is_rs1_0 = io_ren_uops_0_bits_ldst_is_rs1_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_ldst_is_rs1_0 = io_ren_uops_0_bits_ldst_is_rs1_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_ldst_0 = io_ren_uops_0_bits_ldst_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_ldst_0 = io_ren_uops_0_bits_ldst_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_ldst_0 = io_ren_uops_0_bits_ldst_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_lrs1_0 = io_ren_uops_0_bits_lrs1_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_lrs1_0 = io_ren_uops_0_bits_lrs1_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_lrs1_0 = io_ren_uops_0_bits_lrs1_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_lrs2_0 = io_ren_uops_0_bits_lrs2_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_lrs2_0 = io_ren_uops_0_bits_lrs2_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_lrs2_0 = io_ren_uops_0_bits_lrs2_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_2_0_bits_lrs3_0 = io_ren_uops_0_bits_lrs3_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_1_0_bits_lrs3_0 = io_ren_uops_0_bits_lrs3_0;	// @[dispatch.scala:43:7]
+  wire [5:0]  io_dis_uops_0_0_bits_lrs3_0 = io_ren_uops_0_bits_lrs3_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_ldst_val_0 = io_ren_uops_0_bits_ldst_val_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_ldst_val_0 = io_ren_uops_0_bits_ldst_val_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_ldst_val_0 = io_ren_uops_0_bits_ldst_val_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_2_0_bits_dst_rtype_0 = io_ren_uops_0_bits_dst_rtype_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_1_0_bits_dst_rtype_0 = io_ren_uops_0_bits_dst_rtype_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_0_0_bits_dst_rtype_0 = io_ren_uops_0_bits_dst_rtype_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_2_0_bits_lrs1_rtype_0 = io_ren_uops_0_bits_lrs1_rtype_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_1_0_bits_lrs1_rtype_0 = io_ren_uops_0_bits_lrs1_rtype_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_0_0_bits_lrs1_rtype_0 = io_ren_uops_0_bits_lrs1_rtype_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_2_0_bits_lrs2_rtype_0 = io_ren_uops_0_bits_lrs2_rtype_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_1_0_bits_lrs2_rtype_0 = io_ren_uops_0_bits_lrs2_rtype_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_0_0_bits_lrs2_rtype_0 = io_ren_uops_0_bits_lrs2_rtype_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_frs3_en_0 = io_ren_uops_0_bits_frs3_en_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_frs3_en_0 = io_ren_uops_0_bits_frs3_en_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_frs3_en_0 = io_ren_uops_0_bits_frs3_en_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_fp_val_0 = io_ren_uops_0_bits_fp_val_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_fp_val_0 = io_ren_uops_0_bits_fp_val_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_fp_val_0 = io_ren_uops_0_bits_fp_val_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_fp_single_0 = io_ren_uops_0_bits_fp_single_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_fp_single_0 = io_ren_uops_0_bits_fp_single_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_fp_single_0 = io_ren_uops_0_bits_fp_single_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_xcpt_pf_if_0 = io_ren_uops_0_bits_xcpt_pf_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_xcpt_pf_if_0 = io_ren_uops_0_bits_xcpt_pf_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_xcpt_pf_if_0 = io_ren_uops_0_bits_xcpt_pf_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_xcpt_ae_if_0 = io_ren_uops_0_bits_xcpt_ae_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_xcpt_ae_if_0 = io_ren_uops_0_bits_xcpt_ae_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_xcpt_ae_if_0 = io_ren_uops_0_bits_xcpt_ae_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_xcpt_ma_if_0 = io_ren_uops_0_bits_xcpt_ma_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_xcpt_ma_if_0 = io_ren_uops_0_bits_xcpt_ma_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_xcpt_ma_if_0 = io_ren_uops_0_bits_xcpt_ma_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_bp_debug_if_0 = io_ren_uops_0_bits_bp_debug_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_bp_debug_if_0 = io_ren_uops_0_bits_bp_debug_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_bp_debug_if_0 = io_ren_uops_0_bits_bp_debug_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_bits_bp_xcpt_if_0 = io_ren_uops_0_bits_bp_xcpt_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_bits_bp_xcpt_if_0 = io_ren_uops_0_bits_bp_xcpt_if_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_bits_bp_xcpt_if_0 = io_ren_uops_0_bits_bp_xcpt_if_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_2_0_bits_debug_fsrc_0 = io_ren_uops_0_bits_debug_fsrc_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_1_0_bits_debug_fsrc_0 = io_ren_uops_0_bits_debug_fsrc_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_0_0_bits_debug_fsrc_0 = io_ren_uops_0_bits_debug_fsrc_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_2_0_bits_debug_tsrc_0 = io_ren_uops_0_bits_debug_tsrc_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_1_0_bits_debug_tsrc_0 = io_ren_uops_0_bits_debug_tsrc_0;	// @[dispatch.scala:43:7]
+  wire [1:0]  io_dis_uops_0_0_bits_debug_tsrc_0 = io_ren_uops_0_bits_debug_tsrc_0;	// @[dispatch.scala:43:7]
+  wire        _ren_readys_WIRE_2_0 = io_dis_uops_2_0_ready_0;	// @[dispatch.scala:43:7, :47:46]
+  wire        _io_dis_uops_2_0_valid_T_2;	// @[dispatch.scala:58:42]
+  wire        _ren_readys_WIRE_1_0 = io_dis_uops_1_0_ready_0;	// @[dispatch.scala:43:7, :47:46]
+  wire        _io_dis_uops_1_0_valid_T_2;	// @[dispatch.scala:58:42]
+  wire        _ren_readys_WIRE_0 = io_dis_uops_0_0_ready_0;	// @[dispatch.scala:43:7, :47:46]
+  wire        _io_dis_uops_0_0_valid_T_2;	// @[dispatch.scala:58:42]
+  wire        io_ren_uops_0_ready_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_2_0_valid_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_1_0_valid_0;	// @[dispatch.scala:43:7]
+  wire        io_dis_uops_0_0_valid_0;	// @[dispatch.scala:43:7]
+  wire        _ren_readys_T = _ren_readys_WIRE_0 & _ren_readys_WIRE_1_0;	// @[dispatch.scala:47:{46,79}]
+  wire        ren_readys = _ren_readys_T & _ren_readys_WIRE_2_0;	// @[dispatch.scala:47:{46,79}]
+  assign _io_ren_uops_0_ready_T = ren_readys;	// @[dispatch.scala:47:79, :50:39]
+  assign io_ren_uops_0_ready_0 = _io_ren_uops_0_ready_T;	// @[dispatch.scala:43:7, :50:39]
+  wire [2:0]  _io_dis_uops_0_0_valid_T = {1'h0, io_ren_uops_0_bits_iq_type_0[1], 1'h0};	// @[dispatch.scala:43:7, :58:75]
+  wire        _io_dis_uops_0_0_valid_T_1 = |_io_dis_uops_0_0_valid_T;	// @[dispatch.scala:58:{75,98}]
+  assign _io_dis_uops_0_0_valid_T_2 = io_ren_uops_0_valid_0 & _io_dis_uops_0_0_valid_T_1;	// @[dispatch.scala:43:7, :58:{42,98}]
+  assign io_dis_uops_0_0_valid_0 = _io_dis_uops_0_0_valid_T_2;	// @[dispatch.scala:43:7, :58:42]
+  wire [2:0]  _io_dis_uops_1_0_valid_T = {2'h0, io_ren_uops_0_bits_iq_type_0[0]};	// @[dispatch.scala:43:7, :58:75]
+  wire        _io_dis_uops_1_0_valid_T_1 = |_io_dis_uops_1_0_valid_T;	// @[dispatch.scala:58:{75,98}]
+  assign _io_dis_uops_1_0_valid_T_2 = io_ren_uops_0_valid_0 & _io_dis_uops_1_0_valid_T_1;	// @[dispatch.scala:43:7, :58:{42,98}]
+  assign io_dis_uops_1_0_valid_0 = _io_dis_uops_1_0_valid_T_2;	// @[dispatch.scala:43:7, :58:42]
+  wire [2:0]  _io_dis_uops_2_0_valid_T = io_ren_uops_0_bits_iq_type_0 & 3'h4;	// @[dispatch.scala:43:7, :58:75]
+  wire        _io_dis_uops_2_0_valid_T_1 = |_io_dis_uops_2_0_valid_T;	// @[dispatch.scala:58:{75,98}]
+  assign _io_dis_uops_2_0_valid_T_2 = io_ren_uops_0_valid_0 & _io_dis_uops_2_0_valid_T_1;	// @[dispatch.scala:43:7, :58:{42,98}]
+  assign io_dis_uops_2_0_valid_0 = _io_dis_uops_2_0_valid_T_2;	// @[dispatch.scala:43:7, :58:42]
+  assign io_ren_uops_0_ready = io_ren_uops_0_ready_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_valid = io_dis_uops_2_0_valid_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_uopc = io_dis_uops_2_0_bits_uopc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_inst = io_dis_uops_2_0_bits_inst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_debug_inst = io_dis_uops_2_0_bits_debug_inst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_rvc = io_dis_uops_2_0_bits_is_rvc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_debug_pc = io_dis_uops_2_0_bits_debug_pc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_iq_type = io_dis_uops_2_0_bits_iq_type_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_fu_code = io_dis_uops_2_0_bits_fu_code_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_br_type = io_dis_uops_2_0_bits_ctrl_br_type_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_op1_sel = io_dis_uops_2_0_bits_ctrl_op1_sel_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_op2_sel = io_dis_uops_2_0_bits_ctrl_op2_sel_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_imm_sel = io_dis_uops_2_0_bits_ctrl_imm_sel_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_op_fcn = io_dis_uops_2_0_bits_ctrl_op_fcn_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_fcn_dw = io_dis_uops_2_0_bits_ctrl_fcn_dw_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_csr_cmd = io_dis_uops_2_0_bits_ctrl_csr_cmd_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_is_load = io_dis_uops_2_0_bits_ctrl_is_load_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_is_sta = io_dis_uops_2_0_bits_ctrl_is_sta_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ctrl_is_std = io_dis_uops_2_0_bits_ctrl_is_std_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_iw_state = io_dis_uops_2_0_bits_iw_state_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_iw_p1_poisoned = io_dis_uops_2_0_bits_iw_p1_poisoned_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_iw_p2_poisoned = io_dis_uops_2_0_bits_iw_p2_poisoned_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_br = io_dis_uops_2_0_bits_is_br_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_jalr = io_dis_uops_2_0_bits_is_jalr_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_jal = io_dis_uops_2_0_bits_is_jal_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_sfb = io_dis_uops_2_0_bits_is_sfb_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_br_mask = io_dis_uops_2_0_bits_br_mask_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_br_tag = io_dis_uops_2_0_bits_br_tag_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ftq_idx = io_dis_uops_2_0_bits_ftq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_edge_inst = io_dis_uops_2_0_bits_edge_inst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_pc_lob = io_dis_uops_2_0_bits_pc_lob_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_taken = io_dis_uops_2_0_bits_taken_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_imm_packed = io_dis_uops_2_0_bits_imm_packed_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_csr_addr = io_dis_uops_2_0_bits_csr_addr_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_rob_idx = io_dis_uops_2_0_bits_rob_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ldq_idx = io_dis_uops_2_0_bits_ldq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_stq_idx = io_dis_uops_2_0_bits_stq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_rxq_idx = io_dis_uops_2_0_bits_rxq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_pdst = io_dis_uops_2_0_bits_pdst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_prs1 = io_dis_uops_2_0_bits_prs1_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_prs2 = io_dis_uops_2_0_bits_prs2_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_prs3 = io_dis_uops_2_0_bits_prs3_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_prs1_busy = io_dis_uops_2_0_bits_prs1_busy_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_prs2_busy = io_dis_uops_2_0_bits_prs2_busy_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_prs3_busy = io_dis_uops_2_0_bits_prs3_busy_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_stale_pdst = io_dis_uops_2_0_bits_stale_pdst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_exception = io_dis_uops_2_0_bits_exception_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_exc_cause = io_dis_uops_2_0_bits_exc_cause_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_bypassable = io_dis_uops_2_0_bits_bypassable_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_mem_cmd = io_dis_uops_2_0_bits_mem_cmd_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_mem_size = io_dis_uops_2_0_bits_mem_size_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_mem_signed = io_dis_uops_2_0_bits_mem_signed_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_fence = io_dis_uops_2_0_bits_is_fence_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_fencei = io_dis_uops_2_0_bits_is_fencei_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_amo = io_dis_uops_2_0_bits_is_amo_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_uses_ldq = io_dis_uops_2_0_bits_uses_ldq_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_uses_stq = io_dis_uops_2_0_bits_uses_stq_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_sys_pc2epc = io_dis_uops_2_0_bits_is_sys_pc2epc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_is_unique = io_dis_uops_2_0_bits_is_unique_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_flush_on_commit = io_dis_uops_2_0_bits_flush_on_commit_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ldst_is_rs1 = io_dis_uops_2_0_bits_ldst_is_rs1_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ldst = io_dis_uops_2_0_bits_ldst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_lrs1 = io_dis_uops_2_0_bits_lrs1_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_lrs2 = io_dis_uops_2_0_bits_lrs2_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_lrs3 = io_dis_uops_2_0_bits_lrs3_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_ldst_val = io_dis_uops_2_0_bits_ldst_val_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_dst_rtype = io_dis_uops_2_0_bits_dst_rtype_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_lrs1_rtype = io_dis_uops_2_0_bits_lrs1_rtype_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_lrs2_rtype = io_dis_uops_2_0_bits_lrs2_rtype_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_frs3_en = io_dis_uops_2_0_bits_frs3_en_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_fp_val = io_dis_uops_2_0_bits_fp_val_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_fp_single = io_dis_uops_2_0_bits_fp_single_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_xcpt_pf_if = io_dis_uops_2_0_bits_xcpt_pf_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_xcpt_ae_if = io_dis_uops_2_0_bits_xcpt_ae_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_xcpt_ma_if = io_dis_uops_2_0_bits_xcpt_ma_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_bp_debug_if = io_dis_uops_2_0_bits_bp_debug_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_bp_xcpt_if = io_dis_uops_2_0_bits_bp_xcpt_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_debug_fsrc = io_dis_uops_2_0_bits_debug_fsrc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_2_0_bits_debug_tsrc = io_dis_uops_2_0_bits_debug_tsrc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_valid = io_dis_uops_1_0_valid_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_uopc = io_dis_uops_1_0_bits_uopc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_inst = io_dis_uops_1_0_bits_inst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_debug_inst = io_dis_uops_1_0_bits_debug_inst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_rvc = io_dis_uops_1_0_bits_is_rvc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_debug_pc = io_dis_uops_1_0_bits_debug_pc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_iq_type = io_dis_uops_1_0_bits_iq_type_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_fu_code = io_dis_uops_1_0_bits_fu_code_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_br_type = io_dis_uops_1_0_bits_ctrl_br_type_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_op1_sel = io_dis_uops_1_0_bits_ctrl_op1_sel_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_op2_sel = io_dis_uops_1_0_bits_ctrl_op2_sel_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_imm_sel = io_dis_uops_1_0_bits_ctrl_imm_sel_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_op_fcn = io_dis_uops_1_0_bits_ctrl_op_fcn_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_fcn_dw = io_dis_uops_1_0_bits_ctrl_fcn_dw_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_csr_cmd = io_dis_uops_1_0_bits_ctrl_csr_cmd_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_is_load = io_dis_uops_1_0_bits_ctrl_is_load_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_is_sta = io_dis_uops_1_0_bits_ctrl_is_sta_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ctrl_is_std = io_dis_uops_1_0_bits_ctrl_is_std_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_iw_state = io_dis_uops_1_0_bits_iw_state_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_iw_p1_poisoned = io_dis_uops_1_0_bits_iw_p1_poisoned_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_iw_p2_poisoned = io_dis_uops_1_0_bits_iw_p2_poisoned_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_br = io_dis_uops_1_0_bits_is_br_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_jalr = io_dis_uops_1_0_bits_is_jalr_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_jal = io_dis_uops_1_0_bits_is_jal_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_sfb = io_dis_uops_1_0_bits_is_sfb_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_br_mask = io_dis_uops_1_0_bits_br_mask_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_br_tag = io_dis_uops_1_0_bits_br_tag_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ftq_idx = io_dis_uops_1_0_bits_ftq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_edge_inst = io_dis_uops_1_0_bits_edge_inst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_pc_lob = io_dis_uops_1_0_bits_pc_lob_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_taken = io_dis_uops_1_0_bits_taken_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_imm_packed = io_dis_uops_1_0_bits_imm_packed_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_csr_addr = io_dis_uops_1_0_bits_csr_addr_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_rob_idx = io_dis_uops_1_0_bits_rob_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ldq_idx = io_dis_uops_1_0_bits_ldq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_stq_idx = io_dis_uops_1_0_bits_stq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_rxq_idx = io_dis_uops_1_0_bits_rxq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_pdst = io_dis_uops_1_0_bits_pdst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_prs1 = io_dis_uops_1_0_bits_prs1_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_prs2 = io_dis_uops_1_0_bits_prs2_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_prs3 = io_dis_uops_1_0_bits_prs3_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_prs1_busy = io_dis_uops_1_0_bits_prs1_busy_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_prs2_busy = io_dis_uops_1_0_bits_prs2_busy_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_prs3_busy = io_dis_uops_1_0_bits_prs3_busy_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_stale_pdst = io_dis_uops_1_0_bits_stale_pdst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_exception = io_dis_uops_1_0_bits_exception_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_exc_cause = io_dis_uops_1_0_bits_exc_cause_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_bypassable = io_dis_uops_1_0_bits_bypassable_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_mem_cmd = io_dis_uops_1_0_bits_mem_cmd_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_mem_size = io_dis_uops_1_0_bits_mem_size_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_mem_signed = io_dis_uops_1_0_bits_mem_signed_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_fence = io_dis_uops_1_0_bits_is_fence_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_fencei = io_dis_uops_1_0_bits_is_fencei_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_amo = io_dis_uops_1_0_bits_is_amo_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_uses_ldq = io_dis_uops_1_0_bits_uses_ldq_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_uses_stq = io_dis_uops_1_0_bits_uses_stq_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_sys_pc2epc = io_dis_uops_1_0_bits_is_sys_pc2epc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_is_unique = io_dis_uops_1_0_bits_is_unique_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_flush_on_commit = io_dis_uops_1_0_bits_flush_on_commit_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ldst_is_rs1 = io_dis_uops_1_0_bits_ldst_is_rs1_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ldst = io_dis_uops_1_0_bits_ldst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_lrs1 = io_dis_uops_1_0_bits_lrs1_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_lrs2 = io_dis_uops_1_0_bits_lrs2_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_lrs3 = io_dis_uops_1_0_bits_lrs3_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_ldst_val = io_dis_uops_1_0_bits_ldst_val_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_dst_rtype = io_dis_uops_1_0_bits_dst_rtype_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_lrs1_rtype = io_dis_uops_1_0_bits_lrs1_rtype_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_lrs2_rtype = io_dis_uops_1_0_bits_lrs2_rtype_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_frs3_en = io_dis_uops_1_0_bits_frs3_en_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_fp_val = io_dis_uops_1_0_bits_fp_val_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_fp_single = io_dis_uops_1_0_bits_fp_single_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_xcpt_pf_if = io_dis_uops_1_0_bits_xcpt_pf_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_xcpt_ae_if = io_dis_uops_1_0_bits_xcpt_ae_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_xcpt_ma_if = io_dis_uops_1_0_bits_xcpt_ma_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_bp_debug_if = io_dis_uops_1_0_bits_bp_debug_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_bp_xcpt_if = io_dis_uops_1_0_bits_bp_xcpt_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_debug_fsrc = io_dis_uops_1_0_bits_debug_fsrc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_1_0_bits_debug_tsrc = io_dis_uops_1_0_bits_debug_tsrc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_valid = io_dis_uops_0_0_valid_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_uopc = io_dis_uops_0_0_bits_uopc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_inst = io_dis_uops_0_0_bits_inst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_debug_inst = io_dis_uops_0_0_bits_debug_inst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_rvc = io_dis_uops_0_0_bits_is_rvc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_debug_pc = io_dis_uops_0_0_bits_debug_pc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_iq_type = io_dis_uops_0_0_bits_iq_type_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_fu_code = io_dis_uops_0_0_bits_fu_code_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_br_type = io_dis_uops_0_0_bits_ctrl_br_type_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_op1_sel = io_dis_uops_0_0_bits_ctrl_op1_sel_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_op2_sel = io_dis_uops_0_0_bits_ctrl_op2_sel_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_imm_sel = io_dis_uops_0_0_bits_ctrl_imm_sel_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_op_fcn = io_dis_uops_0_0_bits_ctrl_op_fcn_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_fcn_dw = io_dis_uops_0_0_bits_ctrl_fcn_dw_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_csr_cmd = io_dis_uops_0_0_bits_ctrl_csr_cmd_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_is_load = io_dis_uops_0_0_bits_ctrl_is_load_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_is_sta = io_dis_uops_0_0_bits_ctrl_is_sta_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ctrl_is_std = io_dis_uops_0_0_bits_ctrl_is_std_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_iw_state = io_dis_uops_0_0_bits_iw_state_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_iw_p1_poisoned = io_dis_uops_0_0_bits_iw_p1_poisoned_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_iw_p2_poisoned = io_dis_uops_0_0_bits_iw_p2_poisoned_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_br = io_dis_uops_0_0_bits_is_br_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_jalr = io_dis_uops_0_0_bits_is_jalr_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_jal = io_dis_uops_0_0_bits_is_jal_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_sfb = io_dis_uops_0_0_bits_is_sfb_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_br_mask = io_dis_uops_0_0_bits_br_mask_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_br_tag = io_dis_uops_0_0_bits_br_tag_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ftq_idx = io_dis_uops_0_0_bits_ftq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_edge_inst = io_dis_uops_0_0_bits_edge_inst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_pc_lob = io_dis_uops_0_0_bits_pc_lob_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_taken = io_dis_uops_0_0_bits_taken_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_imm_packed = io_dis_uops_0_0_bits_imm_packed_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_csr_addr = io_dis_uops_0_0_bits_csr_addr_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_rob_idx = io_dis_uops_0_0_bits_rob_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ldq_idx = io_dis_uops_0_0_bits_ldq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_stq_idx = io_dis_uops_0_0_bits_stq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_rxq_idx = io_dis_uops_0_0_bits_rxq_idx_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_pdst = io_dis_uops_0_0_bits_pdst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_prs1 = io_dis_uops_0_0_bits_prs1_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_prs2 = io_dis_uops_0_0_bits_prs2_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_prs3 = io_dis_uops_0_0_bits_prs3_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_prs1_busy = io_dis_uops_0_0_bits_prs1_busy_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_prs2_busy = io_dis_uops_0_0_bits_prs2_busy_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_prs3_busy = io_dis_uops_0_0_bits_prs3_busy_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_stale_pdst = io_dis_uops_0_0_bits_stale_pdst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_exception = io_dis_uops_0_0_bits_exception_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_exc_cause = io_dis_uops_0_0_bits_exc_cause_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_bypassable = io_dis_uops_0_0_bits_bypassable_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_mem_cmd = io_dis_uops_0_0_bits_mem_cmd_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_mem_size = io_dis_uops_0_0_bits_mem_size_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_mem_signed = io_dis_uops_0_0_bits_mem_signed_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_fence = io_dis_uops_0_0_bits_is_fence_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_fencei = io_dis_uops_0_0_bits_is_fencei_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_amo = io_dis_uops_0_0_bits_is_amo_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_uses_ldq = io_dis_uops_0_0_bits_uses_ldq_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_uses_stq = io_dis_uops_0_0_bits_uses_stq_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_sys_pc2epc = io_dis_uops_0_0_bits_is_sys_pc2epc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_is_unique = io_dis_uops_0_0_bits_is_unique_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_flush_on_commit = io_dis_uops_0_0_bits_flush_on_commit_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ldst_is_rs1 = io_dis_uops_0_0_bits_ldst_is_rs1_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ldst = io_dis_uops_0_0_bits_ldst_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_lrs1 = io_dis_uops_0_0_bits_lrs1_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_lrs2 = io_dis_uops_0_0_bits_lrs2_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_lrs3 = io_dis_uops_0_0_bits_lrs3_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_ldst_val = io_dis_uops_0_0_bits_ldst_val_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_dst_rtype = io_dis_uops_0_0_bits_dst_rtype_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_lrs1_rtype = io_dis_uops_0_0_bits_lrs1_rtype_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_lrs2_rtype = io_dis_uops_0_0_bits_lrs2_rtype_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_frs3_en = io_dis_uops_0_0_bits_frs3_en_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_fp_val = io_dis_uops_0_0_bits_fp_val_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_fp_single = io_dis_uops_0_0_bits_fp_single_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_xcpt_pf_if = io_dis_uops_0_0_bits_xcpt_pf_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_xcpt_ae_if = io_dis_uops_0_0_bits_xcpt_ae_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_xcpt_ma_if = io_dis_uops_0_0_bits_xcpt_ma_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_bp_debug_if = io_dis_uops_0_0_bits_bp_debug_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_bp_xcpt_if = io_dis_uops_0_0_bits_bp_xcpt_if_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_debug_fsrc = io_dis_uops_0_0_bits_debug_fsrc_0;	// @[dispatch.scala:43:7]
+  assign io_dis_uops_0_0_bits_debug_tsrc = io_dis_uops_0_0_bits_debug_tsrc_0;	// @[dispatch.scala:43:7]
+endmodule
+```
+
+MODULE 4:
+Topic: pipeline
+```verilog
+module counter (
+    input clk,
+    input reset,
+    input load,
+    input [3:0] data,
+    output reg [3:0] count
+);
+
+reg [3:0] count_reg1, count_reg2;
+reg load_reg;
+
+always @(posedge clk) begin
+    if(reset) begin
+        count_reg1 <= 4'b0;
+        count_reg2 <= 4'b0;
+        load_reg <= 1'b0;
+    end
+    else begin
+        count_reg1 <= count_reg2;
+        count_reg2 <= count;
+        load_reg <= load;
+    end
+end
+
+always @(*) begin
+    if(load_reg) begin
+        count <= data;
+    end
+    else begin
+        count <= count_reg1 + 4'b1;
+    end
+end
+
+endmodule
+```
+
+MODULE 5:
+Topic: pipeline
+```verilog
+module pipelined_adder (
+    input clk,
+    input reset,
+    input [7:0] a,
+    input [7:0] b,
+    output [7:0] s,
+    output overflow
+);
+
+reg [7:0] a_reg, b_reg, s_reg;
+reg carry_in_reg, carry_out_reg;
+wire [7:0] sum1, sum2;
+wire carry1, carry2;
+
+assign s = s_reg;
+assign overflow = (a[7] == b[7] && s[7] != a[7]) ? 1 : 0;
+
+// Pipeline stage 1
+always @(posedge clk) begin
+    if (reset) begin
+        a_reg <= 0;
+        b_reg <= 0;
+        s_reg <= 0;
+        carry_in_reg <= 0;
+        carry_out_reg <= 0;
+    end else begin
+        a_reg <= a;
+        b_reg <= b;
+        carry_in_reg <= carry_out_reg;
+    end
+end
+
+// Pipeline stage 2
+carry_lookahead_adder cla1 (
+    .a(a_reg),
+    .b(b_reg),
+    .carry_in(carry_in_reg),
+    .sum(sum1),
+    .carry_out(carry1)
+);
+
+// Pipeline stage 3
+always @(posedge clk) begin
+    if (reset) begin
+        s_reg <= 0;
+        carry_out_reg <= 0;
+    end else begin
+        s_reg <= sum1;
+        carry_out_reg <= carry1;
+    end
+end
+
+// Pipeline stage 4
+carry_lookahead_adder cla2 (
+    .a(a_reg),
+    .b(b_reg),
+    .carry_in(carry_in_reg),
+    .sum(sum2),
+    .carry_out(carry2)
+);
+
+// Pipeline stage 5
+always @(posedge clk) begin
+    if (reset) begin
+        s_reg <= 0;
+        carry_out_reg <= 0;
+    end else begin
+        s_reg <= sum2;
+        carry_out_reg <= carry2;
+    end
+end
+
+endmodule
+
+// Carry-lookahead adder module
+module carry_lookahead_adder (
+    input [7:0] a,
+    input [7:0] b,
+    input carry_in,
+    output [7:0] sum,
+    output carry_out
+);
+
+wire [7:0] p, g;
+wire [6:0] c;
+
+assign p = a ^ b;
+assign g = a & b;
+assign c[0] = carry_in;
+
+genvar i;
+generate
+    for (i = 1; i < 7; i = i + 1) begin : carry_generation
+        assign c[i] = g[i-1] | (p[i-1] & c[i-1]);
+    end
+endgenerate
+
+assign sum = p + (c << 1);
+assign carry_out = g[6] | (p[6] & c[6]);
+
+endmodule
+```
+

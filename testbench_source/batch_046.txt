@@ -1,0 +1,195 @@
+MODULE 1:
+Topic: memory
+```verilog
+module basic_ShieldCtrl(
+//Avalon System control signal.
+input               rsi_MRST_reset, // reset_n from MCU GPIO
+input               csi_MCLK_clk,
+
+//Avalon-MM Control.
+input       [31:0] avs_ctrl_writedata,
+output  [31:0] avs_ctrl_readdata,
+input       [3:0]  avs_ctrl_byteenable,
+input               avs_ctrl_write,
+input               avs_ctrl_read,
+output          avs_ctrl_waitrequest,
+
+//Over current interrupt.
+output          ins_OC_irq,
+
+input               coe_A_OCN,
+output          coe_A_PWREN,
+output          coe_A_HOE,
+output          coe_A_LOE,
+input               coe_B_OCN,
+output          coe_B_PWREN,
+output          coe_B_HOE,
+output          coe_B_LOE
+);
+
+reg                 rMODA_PWREN = 1;
+reg                 rMODA_HOE = 0;
+reg                 rMODA_LOE = 0;
+
+reg                 rMODB_PWREN = 1;
+reg                 rMODB_HOE = 0;
+reg                 rMODB_LOE = 0;
+
+assign  avs_ctrl_readdata = {6'b0, ~rMODB_PWREN, ~rMODA_PWREN, 6'b0, rMODB_HOE, rMODA_HOE, 6'b0, rMODB_LOE, rMODA_LOE, 6'b0, ~coe_B_OCN, ~coe_A_OCN};
+assign  avs_ctrl_waitrequest = 1'b0;
+assign  ins_OC_irq = ~(coe_A_OCN & coe_B_OCN);
+
+assign  coe_A_PWREN = rMODA_PWREN;
+assign  coe_A_HOE = rMODA_HOE;
+assign  coe_A_LOE = rMODA_LOE;
+
+assign  coe_B_PWREN = rMODB_PWREN;
+assign  coe_B_HOE = rMODB_HOE;
+assign  coe_B_LOE = rMODB_LOE;
+
+always@(posedge csi_MCLK_clk or posedge rsi_MRST_reset)
+begin
+    if(rsi_MRST_reset) begin
+        rMODA_PWREN <= 1;
+        rMODA_HOE <= 0;
+        rMODA_LOE <= 0;
+        rMODB_PWREN <= 1;
+        rMODB_HOE <= 0;
+        rMODB_LOE <= 0;
+    end
+    else begin
+        if(avs_ctrl_write) begin
+            if(avs_ctrl_byteenable[3]) begin rMODB_PWREN <= ~avs_ctrl_writedata[25]; rMODA_PWREN <= ~avs_ctrl_writedata[24]; end
+            if(avs_ctrl_byteenable[2]) begin rMODB_HOE <= avs_ctrl_writedata[17]; rMODA_HOE <= avs_ctrl_writedata[16]; end
+            if(avs_ctrl_byteenable[1]) begin rMODB_LOE <= avs_ctrl_writedata[9]; rMODA_LOE <= avs_ctrl_writedata[8]; end
+        end
+    end
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module shift_reg_32 (
+    clk, 
+    p_load,  
+    p_data, 
+    s_in,
+    s_out,
+    shift_en
+);
+
+input clk;
+input s_in;
+input p_load;
+input [31:0] p_data;
+input shift_en;
+output s_out;
+
+reg [31:0] shreg;
+
+always @(posedge clk) begin
+    if (p_load) begin
+        shreg <= p_data;
+    end else begin
+        if (shift_en) begin
+            shreg <= {shreg[30:0], s_in};
+        end
+    end
+end
+
+assign s_out = shreg[31];
+
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module PSWreg (
+    rst, 
+    clk, 
+    unaligned, 
+    ovf, 
+    status
+);
+
+input rst;
+input clk;
+input unaligned;
+input ovf;
+output [31:0] status;
+
+reg [31:0] status_reg;
+
+always @(posedge clk) begin
+    if (rst) begin
+        status_reg <= 32'h0;
+    end else begin
+        status_reg[1] <= unaligned;
+        status_reg[0] <= ovf;
+    end
+end
+
+assign status = status_reg;
+
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module schmitt_trigger (
+  input in,
+  output out
+);
+
+  parameter vth = 1.5; // threshold voltage
+  parameter vtl = 0.2; // hysteresis voltage
+  
+  reg out_reg; // output register
+  
+  always @(in) begin
+    if (in > vth) begin
+      out_reg <= 1'b1;
+    end else if (in < vth - vtl) begin
+      out_reg <= 1'b0;
+    end
+  end
+  
+  assign out = out_reg;
+  
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module ROM (
+  input [k-1:0] addr,
+  output [n-1:0] data
+);
+
+parameter k = 8; // number of address bits
+parameter n = 16; // number of data bits
+parameter m = 256; // number of words (i.e., the number of data entries)
+
+// Define the data entries for the ROM
+reg [n-1:0] rom_data [0:m-1];
+initial begin
+  // Initialize the ROM data entries
+  // Example initialization for a 256x16 mask ROM
+  rom_data[0] = 16'h1234;
+  rom_data[1] = 16'h5678;
+  // ...
+  rom_data[255] = 16'hABCD;
+end
+
+// Connect the input address to the output data
+assign data = rom_data[addr];
+
+endmodule
+```
+

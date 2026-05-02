@@ -1,0 +1,485 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module uartReceiver(
+    input clk,
+    input reset,
+    input rx,
+    input baud_rate,
+    output reg [7:0] data,
+    output reg data_valid
+);
+
+// Internal signals
+reg [3:0] count;
+reg [3:0] bit_count;
+reg [7:0] shift_reg;
+reg rx_reg;
+reg start_bit_detected;
+reg stop_bit_detected;
+reg baud_tick;
+
+// Baud rate generator
+reg [31:0] baud_count;
+always @(posedge clk) begin
+    if (reset) begin
+        baud_count <= 0;
+        baud_tick <= 0;
+    end else begin
+        baud_count <= baud_count + 1;
+        if (baud_count == (50000000 / baud_rate) - 1) begin
+            baud_count <= 0;
+            baud_tick <= 1;
+        end else begin
+            baud_tick <= 0;
+        end
+    end
+end
+
+// Receiver state machine
+parameter IDLE = 2'b00;
+parameter START_BIT = 2'b01;
+parameter DATA_BITS = 2'b10;
+parameter STOP_BIT = 2'b11;
+reg [1:0] state;
+always @(posedge clk) begin
+    if (reset) begin
+        state <= IDLE;
+        count <= 0;
+        bit_count <= 0;
+        shift_reg <= 0;
+        rx_reg <= 1;
+        start_bit_detected <= 0;
+        stop_bit_detected <= 0;
+        data_valid <= 0;
+    end else begin
+        case (state)
+            IDLE: begin
+                if (rx_reg == 0 && baud_tick) begin
+                    state <= START_BIT;
+                    count <= 0;
+                    bit_count <= 0;
+                    shift_reg <= 0;
+                    start_bit_detected <= 1;
+                end else begin
+                    state <= IDLE;
+                end
+            end
+            START_BIT: begin
+                if (count == 4) begin
+                    if (rx_reg == 1) begin
+                        state <= DATA_BITS;
+                        count <= 0;
+                    end else begin
+                        state <= IDLE;
+                        start_bit_detected <= 0;
+                    end
+                end else begin
+                    count <= count + 1;
+                end
+            end
+            DATA_BITS: begin
+                if (count == 8) begin
+                    state <= STOP_BIT;
+                    count <= 0;
+                end else begin
+                    if (baud_tick) begin
+                        shift_reg <= {shift_reg[6:0], rx_reg};
+                        count <= count + 1;
+                    end
+                end
+            end
+            STOP_BIT: begin
+                if (count == 4) begin
+                    if (rx_reg == 1) begin
+                        state <= IDLE;
+                        stop_bit_detected <= 1;
+                        data <= shift_reg;
+                        data_valid <= 1;
+                    end else begin
+                        state <= IDLE;
+                        start_bit_detected <= 0;
+                    end
+                end else begin
+                    count <= count + 1;
+                end
+            end
+            default: begin
+                state <= IDLE;
+            end
+        endcase
+    end
+end
+
+// Input sampling
+always @(posedge clk) begin
+    if (reset) begin
+        rx_reg <= 1;
+    end else begin
+        if (baud_tick) begin
+            rx_reg <= rx;
+        end
+    end
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module gps_receiver (
+  input clk,
+  input rst,
+  input gps_rx,
+  output reg [31:0] latitude,
+  output reg [31:0] longitude,
+  output reg [15:0] altitude
+);
+
+  // Define internal signals
+  reg [31:0] satellite_data;
+  reg [31:0] receiver_position;
+  
+  // Define constants
+  parameter GPS_DATA_WIDTH = 24;
+  parameter GPS_DATA_RATE = 9600;
+  
+  // Define state machine states
+  parameter STATE_SYNC = 2'b00;
+  parameter STATE_DATA = 2'b01;
+  
+  // Define state machine variables
+  reg [1:0] state;
+  reg [7:0] bit_count;
+  reg [GPS_DATA_WIDTH-1:0] data;
+  
+  // Define GPS decoding logic
+  always @(posedge clk) begin
+    if (rst) begin
+      state <= STATE_SYNC;
+      bit_count <= 0;
+      data <= 0;
+      satellite_data <= 0;
+      receiver_position <= 0;
+    end
+    else begin
+      case (state)
+        STATE_SYNC: begin
+          if (gps_rx == 1'b0) begin
+            state <= STATE_DATA;
+            bit_count <= 0;
+          end
+        end
+        STATE_DATA: begin
+          bit_count <= bit_count + 1;
+          if (bit_count == GPS_DATA_WIDTH) begin
+            data <= gps_rx;
+            satellite_data <= {satellite_data, data};
+            state <= STATE_SYNC;
+            bit_count <= 0;
+          end
+          else begin
+            data <= {data[GPS_DATA_WIDTH-2:0], gps_rx};
+          end
+        end
+      endcase
+    end
+  end
+  
+  // Define receiver position calculation logic
+  always @(posedge clk) begin
+    if (rst) begin
+      receiver_position <= 0;
+    end
+    else if (satellite_data != 0) begin
+      // Calculate receiver position using satellite data
+      // ...
+      // Store latitude, longitude, and altitude in output registers
+      latitude <= 32'h12345678;
+      longitude <= 32'h87654321;
+      altitude <= 16'h1234;
+    end
+  end
+  
+endmodule
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+module bcd_counter (
+    input clk,
+    input reset,   // Synchronous active-high reset
+    output [3:1] ena,
+    output [15:0] q);
+
+    // Define states
+    parameter IDLE = 2'b00;
+    parameter INC_D1 = 2'b01;
+    parameter INC_D2 = 2'b10;
+    parameter INC_D3 = 2'b11;
+
+    // Define internal signals
+    reg [15:0] count;
+    reg [1:0] state;
+
+    // Output enable signals for upper three digits
+    assign ena = {state[1], state[0], 1'b1};
+
+    // State machine
+    always @(posedge clk) begin
+        if (reset) begin
+            count <= 16'd0;
+            state <= IDLE;
+        end
+        else begin
+            case (state)
+                IDLE: begin
+                    count <= 16'd0;
+                    state <= INC_D1;
+                end
+                INC_D1: begin
+                    count <= count + 4'd1;
+                    if (count[3:0] == 4'd10) begin
+                        state <= INC_D2;
+                    end
+                end
+                INC_D2: begin
+                    count <= count + 4'd1;
+                    if (count[7:4] == 4'd10) begin
+                        state <= INC_D3;
+                    end
+                end
+                INC_D3: begin
+                    count <= count + 4'd1;
+                    if (count[11:8] == 4'd10) begin
+                        state <= IDLE;
+                    end
+                end
+            endcase
+        end
+    end
+
+    // Output BCD counter
+    assign q = {count[15:12], count[11:8], count[7:4], count[3:0]};
+
+endmodule
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module Ethernet_MAC (
+  input [n-1:0] data_in,
+  input [47:0] dest_mac,
+  input [47:0] src_mac,
+  input clk,
+  input reset,
+  output reg [n-1:0] data_out,
+  output reg [47:0] dest_mac_out,
+  output reg [47:0] src_mac_out,
+  output reg tx_en,
+  output reg rx_en
+);
+
+parameter n = 8; // number of input signals
+parameter m = 8; // number of output signals
+
+reg [7:0] preamble = 8'h55; // Ethernet preamble
+reg [31:0] sfd = 32'hD5C5D5C5; // Ethernet Start Frame Delimiter
+
+reg [47:0] dest_mac_reg; // register for storing destination MAC address
+reg [47:0] src_mac_reg; // register for storing source MAC address
+reg [n-1:0] data_reg; // register for storing data
+
+reg [31:0] frame_cnt; // counter for tracking the number of bits in a frame
+reg [3:0] state; // state machine state
+
+parameter IDLE = 4'b0000; // idle state
+parameter PREAMBLE = 4'b0001; // preamble state
+parameter SFD = 4'b0010; // start frame delimiter state
+parameter DEST_MAC = 4'b0011; // destination MAC address state
+parameter SRC_MAC = 4'b0100; // source MAC address state
+parameter LENGTH = 4'b0101; // length state
+parameter DATA = 4'b0110; // data state
+parameter FCS = 4'b0111; // frame check sequence state
+
+always @(posedge clk) begin
+  if (reset) begin
+    state <= IDLE;
+    frame_cnt <= 0;
+    tx_en <= 0;
+    rx_en <= 0;
+  end else begin
+    case (state)
+      IDLE: begin
+        tx_en <= 0;
+        rx_en <= 1;
+        if (data_in != 0) begin
+          state <= PREAMBLE;
+          frame_cnt <= 0;
+          dest_mac_reg <= dest_mac;
+          src_mac_reg <= src_mac;
+          data_reg <= data_in;
+        end
+      end
+      PREAMBLE: begin
+        tx_en <= 1;
+        rx_en <= 0;
+        if (frame_cnt == 7) begin
+          state <= SFD;
+          frame_cnt <= 0;
+        end else begin
+          data_out <= preamble;
+          frame_cnt <= frame_cnt + 1;
+        end
+      end
+      SFD: begin
+        tx_en <= 1;
+        rx_en <= 0;
+        if (frame_cnt == 31) begin
+          state <= DEST_MAC;
+          frame_cnt <= 0;
+        end else begin
+          data_out <= sfd[frame_cnt];
+          frame_cnt <= frame_cnt + 1;
+        end
+      end
+      DEST_MAC: begin
+        tx_en <= 1;
+        rx_en <= 0;
+        if (frame_cnt == 47) begin
+          state <= SRC_MAC;
+          frame_cnt <= 0;
+        end else begin
+          data_out <= dest_mac_reg[frame_cnt];
+          frame_cnt <= frame_cnt + 1;
+        end
+      end
+      SRC_MAC: begin
+        tx_en <= 1;
+        rx_en <= 0;
+        if (frame_cnt == 95) begin
+          state <= LENGTH;
+          frame_cnt <= 0;
+        end else begin
+          data_out <= src_mac_reg[frame_cnt-48];
+          frame_cnt <= frame_cnt + 1;
+        end
+      end
+      LENGTH: begin
+        tx_en <= 1;
+        rx_en <= 0;
+        if (frame_cnt == 111) begin
+          state <= DATA;
+          frame_cnt <= 0;
+        end else begin
+          data_out <= 0;
+          frame_cnt <= frame_cnt + 1;
+        end
+      end
+      DATA: begin
+        tx_en <= 1;
+        rx_en <= 0;
+        if (frame_cnt == (n*8)-1) begin
+          state <= FCS;
+          frame_cnt <= 0;
+        end else begin
+          data_out <= data_reg[frame_cnt-112];
+          frame_cnt <= frame_cnt + 1;
+        end
+      end
+      FCS: begin
+        tx_en <= 1;
+        rx_en <= 0;
+        if (frame_cnt == 127) begin
+          state <= IDLE;
+          frame_cnt <= 0;
+        end else begin
+          data_out <= 0;
+          frame_cnt <= frame_cnt + 1;
+        end
+      end
+    endcase
+  end
+end
+
+endmodule
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module fsm_longest_sequence_detection (
+  input clk,
+  input reset,
+  input [7:0] data,
+  output reg [2:0] longest_sequence
+);
+
+  parameter S0 = 3'b000, S1 = 3'b001, S2 = 3'b010, S3 = 3'b011, S4 = 3'b100;
+  reg [2:0] state, next_state;
+  
+  always @(posedge clk) begin
+    if (reset) begin
+      state <= S0;
+      longest_sequence <= 3'b000;
+    end
+    else begin
+      state <= next_state;
+      case (state)
+        S0: begin
+          if (data == 8'b00000000)
+            next_state = S0;
+          else if (data[7] == 1)
+            next_state = S1;
+          else
+            next_state = S0;
+        end
+        S1: begin
+          if (data == 8'b11111111) begin
+            next_state = S4;
+            longest_sequence <= 3'b111;
+          end
+          else if (data[7] == 1)
+            next_state = S2;
+          else
+            next_state = S0;
+        end
+        S2: begin
+          if (data == 8'b11111111) begin
+            next_state = S4;
+            longest_sequence <= 3'b111;
+          end
+          else if (data[7:6] == 2'b11)
+            next_state = S3;
+          else if (data[7] == 0)
+            next_state = S0;
+          else
+            next_state = S2;
+        end
+        S3: begin
+          if (data == 8'b11111111) begin
+            next_state = S4;
+            longest_sequence <= 3'b111;
+          end
+          else if (data[7] == 0)
+            next_state = S0;
+          else
+            next_state = S3;
+        end
+        S4: begin
+          if (data == 8'b11111111)
+            next_state = S4;
+          else
+            next_state = S0;
+        end
+      endcase
+    end
+  end
+  
+endmodule
+
+```
+

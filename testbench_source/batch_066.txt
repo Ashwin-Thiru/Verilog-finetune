@@ -1,0 +1,155 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module mux (in0, in1, in2, in3, sel, out);
+  input [7:0] in0, in1, in2, in3;
+  input [1:0] sel;
+  output [7:0] out;
+
+  assign out = (sel == 2'b00) ? in0 :
+               (sel == 2'b01) ? in1 :
+               (sel == 2'b10) ? in2 :
+               (sel == 2'b11) ? in3 : 8'b0;
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module ripple_adder(
+  input [3:0] a,
+  input [3:0] b,
+  input cin,
+  output [3:0] sum,
+  output cout
+);
+
+  wire [3:0] temp_sum;
+  wire [4:0] temp_carry;
+
+  assign temp_sum = a + b + cin;
+  assign temp_carry = {cin, temp_sum} + 1'b0;
+
+  assign sum = temp_sum;
+  assign cout = temp_carry[4];
+
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module full_adder(
+    input a, b, cin,
+    output cout, sum
+);
+
+    wire w1, w2, w3;
+    
+    // XOR gate for sum calculation
+    xor(sum, a, b, cin);
+    
+    // AND gate for carry-out calculation
+    and(w1, a, b);
+    and(w2, a, cin);
+    and(w3, b, cin);
+    or(cout, w1, w2, w3);
+    
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module logic_gate (
+    input A,
+    input B,
+    input C,
+    input D,
+    input E,
+    input F,
+    input G,
+    input H,
+    output X
+);
+
+    assign X = (A & B) | (~C & D) | (E ^ F) | (~G & H);
+
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module binary_adder (
+    // inputs
+    input [3:0] A,
+    input [3:0] B,
+    // outputs
+    output [3:0] S,
+    output Cout
+);
+
+wire [3:0] sum;
+wire [3:0] carry;
+
+full_adder fa0(
+    .A(A[0]),
+    .B(B[0]),
+    .Cin(1'b0),
+    .S(sum[0]),
+    .Cout(carry[0])
+);
+
+full_adder fa1(
+    .A(A[1]),
+    .B(B[1]),
+    .Cin(carry[0]),
+    .S(sum[1]),
+    .Cout(carry[1])
+);
+
+full_adder fa2(
+    .A(A[2]),
+    .B(B[2]),
+    .Cin(carry[1]),
+    .S(sum[2]),
+    .Cout(carry[2])
+);
+
+full_adder fa3(
+    .A(A[3]),
+    .B(B[3]),
+    .Cin(carry[2]),
+    .S(sum[3]),
+    .Cout(Cout)
+);
+
+assign S = sum;
+
+endmodule
+
+module full_adder (
+    // inputs
+    input A,
+    input B,
+    input Cin,
+    // outputs
+    output S,
+    output Cout
+);
+
+wire xor1;
+wire and1;
+wire and2;
+
+assign xor1 = A ^ B;
+assign and1 = A & B;
+assign and2 = xor1 & Cin;
+
+assign S = xor1 ^ Cin;
+assign Cout = and1 | and2;
+
+endmodule
+```
+

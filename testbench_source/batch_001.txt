@@ -1,0 +1,390 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module fsm_4bit_sequence_detection (
+  input clk,
+  input reset,
+  input data,
+  output reg match
+);
+
+  parameter S0 = 2'b00, S1 = 2'b01, S2 = 2'b10, S3 = 2'b11;
+  reg [1:0] state, next_state;
+  
+  always @ (posedge clk, posedge reset) begin
+    if (reset) begin
+      state <= S0;
+      match <= 0;
+    end
+    else begin
+      state <= next_state;
+      if (state == S0) begin
+        if (data == 1'b1) begin
+          next_state <= S1;
+        end
+        else begin
+          next_state <= S0;
+        end
+      end
+      else if (state == S1) begin
+        if (data == 1'b0) begin
+          next_state <= S0;
+        end
+        else begin
+          next_state <= S2;
+        end
+      end
+      else if (state == S2) begin
+        if (data == 1'b1) begin
+          next_state <= S3;
+        end
+        else begin
+          next_state <= S0;
+        end
+      end
+      else if (state == S3) begin
+        if (data == 1'b1) begin
+          next_state <= S1;
+          match <= 1;
+        end
+        else begin
+          next_state <= S2;
+        end
+      end
+    end
+  end
+  
+endmodule
+
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module vending_machine (
+  input clk,
+  input reset,
+  input [4:0] coin_in,
+  input [1:0] product_in,
+  output reg [1:0] product_out,
+  output reg [4:0] change_out,
+  output reg [4:0] display_out
+);
+
+  parameter IDLE = 2'b00, PRODUCT_SELECTED = 2'b01, MONEY_INSERTED = 2'b10;
+  reg [1:0] state, next_state;
+  reg [3:0] price;
+  reg [4:0] inserted_amount, remaining_amount;
+  reg [4:0] change;
+  
+  always @(posedge clk) begin
+    if (reset) begin
+      state <= IDLE;
+      product_out <= 2'b00;
+      change_out <= 5'b00000;
+      display_out <= 5'b00000;
+      inserted_amount <= 5'b00000;
+      remaining_amount <= 5'b00000;
+      change <= 5'b00000;
+    end
+    else begin
+      state <= next_state;
+      case (state)
+        IDLE: begin
+          product_out <= 2'b00;
+          change_out <= 5'b00000;
+          display_out <= 5'b00000;
+          inserted_amount <= 5'b00000;
+          remaining_amount <= 5'b00000;
+          change <= 5'b00000;
+          if (product_in != 2'b00) begin
+            price <= product_in == 2'b01 ? 4'b0001 : product_in == 2'b10 ? 4'b0010 : 4'b0011;
+            next_state <= PRODUCT_SELECTED;
+          end
+          else begin
+            next_state <= IDLE;
+          end
+        end
+        PRODUCT_SELECTED: begin
+          product_out <= product_in;
+          display_out <= price;
+          if (coin_in != 5'b00000) begin
+            inserted_amount <= inserted_amount + coin_in;
+            if (inserted_amount >= price) begin
+              change <= inserted_amount - price;
+              next_state <= MONEY_INSERTED;
+            end
+            else begin
+              remaining_amount <= price - inserted_amount;
+              next_state <= PRODUCT_SELECTED;
+            end
+          end
+          else begin
+            next_state <= PRODUCT_SELECTED;
+          end
+        end
+        MONEY_INSERTED: begin
+          change_out <= change;
+          if (coin_in != 5'b00000) begin
+            inserted_amount <= inserted_amount + coin_in;
+            change <= inserted_amount - price;
+            if (inserted_amount >= price) begin
+              next_state <= MONEY_INSERTED;
+            end
+            else begin
+              remaining_amount <= price - inserted_amount;
+              next_state <= PRODUCT_SELECTED;
+            end
+          end
+          else begin
+            next_state <= MONEY_INSERTED;
+          end
+        end
+      endcase
+    end
+  end
+endmodule
+
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+module fsm_timer (
+  input clk,
+  input reset,
+  input data,
+  output reg shift_ena,
+  output reg counting,
+  output reg done,
+  input ack,
+  input done_counting
+);
+
+  // Define states
+  parameter IDLE = 2'b00;
+  parameter SEARCHING = 2'b01;
+  parameter WAITING = 2'b10;
+  parameter COUNTING = 2'b11;
+
+  // Define state register and next state logic
+  reg [1:0] state, next_state;
+  always @ (posedge clk, posedge reset) begin
+    if (reset) begin
+      state <= IDLE;
+    end else begin
+      state <= next_state;
+    end
+  end
+
+  // Define output register and next output logic
+  reg shift_ena_out, counting_out, done_out;
+  always @ (posedge clk, posedge reset) begin
+    if (reset) begin
+      shift_ena_out <= 1'b0;
+      counting_out <= 1'b0;
+      done_out <= 1'b0;
+    end else begin
+      shift_ena_out <= shift_ena;
+      counting_out <= counting;
+      done_out <= done;
+    end
+  end
+
+  // Define counter register and next counter logic
+  reg [4:0] counter;
+  always @ (posedge clk, posedge reset) begin
+    if (reset) begin
+      counter <= 5'b0;
+    end else if (counting) begin
+      counter <= counter + 5'b1;
+    end
+  end
+
+  // Define pattern detection logic
+  reg [3:0] pattern;
+  always @ (posedge clk, posedge reset) begin
+    if (reset) begin
+      pattern <= 4'b0;
+    end else begin
+      pattern <= {pattern[2:0], data};
+    end
+  end
+
+  // Define next state and output logic
+  always @ (*) begin
+    case (state)
+      IDLE: begin
+        next_state = SEARCHING;
+        shift_ena = 1'b1;
+        counting = 1'b0;
+        done = 1'b0;
+      end
+      SEARCHING: begin
+        if (pattern == 4'b1011) begin
+          next_state = WAITING;
+          shift_ena = 1'b0;
+          counting = 1'b0;
+          done = 1'b0;
+        end else begin
+          next_state = SEARCHING;
+          shift_ena = 1'b1;
+          counting = 1'b0;
+          done = 1'b0;
+        end
+      end
+      WAITING: begin
+        next_state = COUNTING;
+        shift_ena = 1'b0;
+        counting = 1'b1;
+        done = 1'b0;
+      end
+      COUNTING: begin
+        if (done_counting) begin
+          next_state = IDLE;
+          shift_ena = 1'b1;
+          counting = 1'b0;
+          done = 1'b1;
+        end else begin
+          next_state = COUNTING;
+          shift_ena = 1'b0;
+          counting = 1'b1;
+          done = 1'b0;
+        end
+      end
+      default: begin
+        next_state = IDLE;
+        shift_ena = 1'b1;
+        counting = 1'b0;
+        done = 1'b0;
+      end
+    endcase
+  end
+
+endmodule
+
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module binary_counter (
+    input clk,
+    input reset,      // Asynchronous active-high reset
+    output reg [3:0] q);
+    
+    // Define states
+    parameter [1:0]
+        S0 = 2'b00,
+        S1 = 2'b01,
+        S2 = 2'b10,
+        S3 = 2'b11;
+    
+    // Define state register and next state logic
+    reg [1:0] state, next_state;
+    always @ (posedge clk, posedge reset) begin
+        if (reset) begin
+            state <= S0;
+        end else begin
+            state <= next_state;
+        end
+    end
+    
+    // Define output logic
+    always @ (*) begin
+        case (state)
+            S0: q = 4'b0000;
+            S1: q = 4'b0001;
+            S2: q = 4'b0010;
+            S3: q = 4'b0011;
+        endcase
+    end
+    
+    // Define next state logic
+    always @ (*) begin
+        case (state)
+            S0: next_state = S1;
+            S1: next_state = S2;
+            S2: next_state = S3;
+            S3: next_state = S0;
+        endcase
+    end
+    
+endmodule
+
+module top_module (
+    input clk,
+    input reset,      // Asynchronous active-high reset
+    output [3:0] q);
+    
+    binary_counter counter (
+        .clk(clk),
+        .reset(reset),
+        .q(q)
+    );
+    
+endmodule
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module edge_detect (
+  input               clk,
+  input               rst_n,
+  input               a,
+  output reg          rise,
+  output reg          down
+);
+
+  // Define the states of the state machine
+  localparam IDLE = 2'b00;
+  localparam RISING = 2'b01;
+  localparam FALLING = 2'b10;
+
+  // Define the current state variable
+  reg [1:0] state;
+
+  // Define the previous value of the input signal
+  reg prev_a;
+
+  // Initialize the state and output signals
+  initial begin
+    state = IDLE;
+    rise = 1'b0;
+    down = 1'b0;
+  end
+
+  // Detect edges on the rising edge of the clock
+  always @(posedge clk) begin
+    // Reset the state machine on a low active reset signal
+    if (!rst_n) begin
+      state <= IDLE;
+      rise <= 1'b0;
+      down <= 1'b0;
+    end
+    else begin
+      // Check for a rising edge
+      if ((a == 1'b1) && (prev_a == 1'b0)) begin
+        state <= RISING;
+        rise <= 1'b1;
+      end
+      // Check for a falling edge
+      else if ((a == 1'b0) && (prev_a == 1'b1)) begin
+        state <= FALLING;
+        down <= 1'b1;
+      end
+      // Stay in the current state otherwise
+      else begin
+        state <= state;
+        rise <= 1'b0;
+        down <= 1'b0;
+      end
+      // Save the current value of the input signal
+      prev_a <= a;
+    end
+  end
+
+endmodule
+```
+

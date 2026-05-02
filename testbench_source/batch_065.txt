@@ -1,0 +1,175 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module mux4to1(
+    input A0,
+    input A1,
+    input A2,
+    input A3,
+    input S0,
+    input S1,
+    output X
+);
+
+wire notS0;
+wire notS1;
+wire and1;
+wire and2;
+wire and3;
+wire and4;
+wire or1;
+
+not(notS0, S0);
+not(notS1, S1);
+
+and(and1, A0, notS0, notS1);
+and(and2, A1, notS0, S1);
+and(and3, A2, S0, notS1);
+and(and4, A3, S0, S1);
+
+or(or1, and1, and2, and3, and4);
+
+assign X = or1;
+
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module math_operation(
+   input wire [3:0] a,
+   input wire [3:0] b,
+   output wire [3:0] result
+);
+
+   assign result = a + (2 * b);
+
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module multiplier(
+  input [31:0] a,
+  input [31:0] b,
+  output reg [63:0] product
+);
+
+  wire [31:0] a_bits [0:31];
+  wire [31:0] b_bits [0:31];
+  wire [31:0] partial_products [0:31][0:31];
+  wire [31:0] carry [0:31][0:31];
+  wire [31:0] sum [0:31][0:31];
+  wire [2:0] parity [0:31];
+  wire [31:0] reverse [0:31];
+
+  // Split inputs into individual bits
+  genvar i;
+  generate
+    for (i = 0; i < 32; i = i + 1) begin : a_bits_gen
+      assign a_bits[i] = a[i];
+    end
+    for (i = 0; i < 32; i = i + 1) begin : b_bits_gen
+      assign b_bits[i] = b[i];
+    end
+  endgenerate
+
+  // Generate partial products
+  genvar j, k;
+  generate
+    for (j = 0; j < 32; j = j + 1) begin : partial_products_gen
+      for (k = 0; k < 32; k = k + 1) begin : partial_products_gen2
+        assign partial_products[j][k] = a_bits[j] & b_bits[k];
+      end
+    end
+  endgenerate
+
+  // Generate carry and sum arrays for adder
+  genvar m, n;
+  generate
+    for (m = 0; m < 32; m = m + 1) begin : carry_gen
+      for (n = 0; n < 32; n = n + 1) begin : carry_gen2
+        if (n == 0) begin
+          assign carry[m][n] = 1'b0;
+        end else if (n == 1) begin
+          assign carry[m][n] = partial_products[m][n-1] | (a_bits[m] & b_bits[n-1]);
+        end else begin
+          assign carry[m][n] = (partial_products[m][n-1] & carry[m][n-1]) | (a_bits[m] & b_bits[n-1]);
+        end
+      end
+    end
+    for (m = 0; m < 32; m = m + 1) begin : sum_gen
+      for (n = 0; n < 32; n = n + 1) begin : sum_gen2
+        if (n == 0) begin
+          assign sum[m][n] = partial_products[m][n] ^ (a_bits[m] & b_bits[n]);
+        end else begin
+          assign sum[m][n] = partial_products[m][n] ^ carry[m][n];
+        end
+      end
+    end
+  endgenerate
+
+  // Generate parity and reverse arrays for reverse and parity module
+  genvar p;
+  generate
+    for (p = 0; p < 32; p = p + 1) begin : parity_gen
+      assign parity[p] = {sum[p][0], sum[p][1], sum[p][2]} ^ {sum[p][3], sum[p][4], sum[p][5]} ^ {sum[p][6], sum[p][7], sum[p][8]} ^ {sum[p][9], sum[p][10], sum[p][11]} ^ {sum[p][12], sum[p][13], sum[p][14]} ^ {sum[p][15], sum[p][16], sum[p][17]} ^ {sum[p][18], sum[p][19], sum[p][20]} ^ {sum[p][21], sum[p][22], sum[p][23]} ^ {sum[p][24], sum[p][25], sum[p][26]} ^ {sum[p][27], sum[p][28], sum[p][29]} ^ {sum[p][30], sum[p][31], 1'b0};
+      assign reverse[p] = {sum[p][31], sum[p][30], sum[p][29], sum[p][28], sum[p][27], sum[p][26], sum[p][25], sum[p][24], sum[p][23], sum[p][22], sum[p][21], sum[p][20], sum[p][19], sum[p][18], sum[p][17], sum[p][16], sum[p][15], sum[p][14], sum[p][13], sum[p][12], sum[p][11], sum[p][10], sum[p][9], sum[p][8], sum[p][7], sum[p][6], sum[p][5], sum[p][4], sum[p][3], sum[p][2], sum[p][1], sum[p][0]};
+    end
+  endgenerate
+
+  // Generate final product using adder and reverse and parity modules
+  genvar q, r;
+  generate
+    for (q = 0; q < 32; q = q + 1) begin : product_gen
+      for (r = 0; r < 32; r = r + 1) begin : product_gen2
+        if (r == 0) begin
+          carry_lookahead_adder adder(.a(sum[q][r]), .b(reverse[r]), .carry_in(1'b0), .sum_out(product[q+r]));
+        end else begin
+          carry_lookahead_adder adder(.a(sum[q][r]), .b(reverse[r]), .carry_in(carry[q][r-1]), .sum_out(product[q+r]));
+        end
+      end
+    end
+  endgenerate
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module barrel_shift (
+    input [3:0] DATA,
+    input [1:0] SHIFT,
+    output [3:0] RESULT
+);
+
+    assign RESULT = (SHIFT == 2'b00) ? DATA :
+                    (SHIFT == 2'b01) ? {DATA[0], DATA[3:1]} :
+                    (SHIFT == 2'b10) ? {DATA[1:0], DATA[3:2]} :
+                    {DATA[2:0], DATA[3]};
+
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module adder_4bit(A, B, reset, C);
+
+  input [3:0] A;
+  input [3:0] B;
+  input reset;
+  output [3:0] C;
+
+  wire [4:0] sum;
+
+  assign sum = {1'b0, A} + {1'b0, B};
+
+  assign C = reset ? 4'b0000 : sum[3:0];
+
+endmodule
+```
+

@@ -1,0 +1,137 @@
+MODULE 1:
+Topic: memory
+```verilog
+module counter (
+  input clk,
+  input rst,
+  input enable,
+  output reg done,
+  output reg [3:0] out
+);
+
+  always @(posedge clk or posedge rst) begin
+    if (rst) begin
+      out <= 4'b0;
+      done <= 1'b0;
+    end
+    else if (enable) begin
+      out <= out + 1;
+      done <= 1'b0;
+    end
+    else begin
+      done <= 1'b1;
+    end
+  end
+
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module adder(
+    input [3:0] A,
+    input [3:0] B,
+    output reg [3:0] S,
+    output reg C
+);
+
+reg [3:0] temp;
+
+always @(*) begin
+    temp = A ^ B;
+    S = temp ^ S;
+    C = (A & B) | (temp & S);
+end
+
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module ExecuteForwarding(p0, p1, p0Addr, p1Addr, regAddr_EX_MEM, regWe_EX_MEM, aluResult_EX_MEM, jal_EX_MEM, pcNext_EX_MEM, memRe_EX_MEM, regAddr_MEM_WB, regWe_MEM_WB, aluResult_MEM_WB, jal_MEM_WB, pcNext_MEM_WB, memRe_MEM_WB, memData_MEM_WB, writeData_WB, writeAddr_WB, writeEnable_WB, forwardP0, forwardP1, forwardStall);
+  input [15:0] p0, p1, aluResult_EX_MEM, pcNext_EX_MEM, aluResult_MEM_WB, pcNext_MEM_WB, memData_MEM_WB, writeData_WB;
+  input [3:0] p0Addr, p1Addr, regAddr_EX_MEM, regAddr_MEM_WB, writeAddr_WB;
+  input regWe_EX_MEM, jal_EX_MEM, memRe_EX_MEM, regWe_MEM_WB, jal_MEM_WB, memRe_MEM_WB, writeEnable_WB;
+  output [15:0] forwardP0, forwardP1;
+  output forwardStall;
+
+  wire [15:0] memoryForwarding, writeBackForwarding;
+
+  assign memoryForwarding = jal_EX_MEM ? pcNext_EX_MEM : aluResult_EX_MEM;
+  assign writeBackForwarding = jal_MEM_WB ? pcNext_MEM_WB : (memRe_MEM_WB ? memData_MEM_WB : aluResult_MEM_WB);
+
+  assign forwardP0 = (p0Addr == 4'b0000) ? p0 : 
+                     (regWe_EX_MEM && (p0Addr == regAddr_EX_MEM) && !(regWe_MEM_WB && memRe_MEM_WB && (p0Addr == regAddr_MEM_WB))) ? memoryForwarding :
+                     (regWe_MEM_WB && (p0Addr == regAddr_MEM_WB)) ? writeBackForwarding:
+                     (writeEnable_WB && (p0Addr == writeAddr_WB)) ? writeData_WB :
+                      p0;
+  assign forwardP1 = (p1Addr == 4'b0000) ? p1 : 
+                     (regWe_EX_MEM && (p1Addr == regAddr_EX_MEM) && !(regWe_MEM_WB && memRe_MEM_WB && (p1Addr == regAddr_MEM_WB))) ? memoryForwarding :
+                     (regWe_MEM_WB && (p1Addr == regAddr_MEM_WB)) ? writeBackForwarding :
+                     (writeEnable_WB && (p1Addr == writeAddr_WB)) ? writeData_WB :
+                      p1;
+
+  assign forwardStall = (regWe_EX_MEM && 
+                        (((p0Addr == regAddr_EX_MEM) && memRe_EX_MEM && 
+                        !(regWe_MEM_WB && memRe_MEM_WB && (p0Addr == regAddr_MEM_WB))) || 
+                        ((p1Addr == regAddr_EX_MEM) && memRe_EX_MEM &&
+                        !(regWe_MEM_WB && memRe_MEM_WB && (p1Addr == regAddr_MEM_WB)))));
+
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module d_flip_flop (
+    input clk,
+    input d,
+    output reg q
+);
+
+  wire n1, n2, n3, n4;
+
+  // Positive edge-triggered D flip-flop using NAND gates
+  // Q(t+1) = D & ~CLK & Q(t)
+  // ~Q(t+1) = ~D & ~CLK & ~Q(t)
+  // Q(t+1) = ~(~D & ~CLK & ~Q(t))
+  // ~Q(t+1) = ~(D & ~CLK & Q(t))
+
+  assign n1 = ~(d & ~clk & q);
+  assign n2 = ~(~d & ~clk & ~q);
+  assign n3 = ~(n1 & ~clk & n4);
+  assign n4 = ~(n2 & ~clk & n3);
+
+  always @(posedge clk) begin
+    q <= n3;
+  end
+
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module counter (
+  input clk,
+  input reset,
+  input enable,
+  output reg [WIDTH-1:0] count
+);
+
+parameter WIDTH = 8;
+
+always @(posedge clk) begin
+  if (reset) begin
+    count <= 0;
+  end else if (enable) begin
+    count <= count + 1;
+  end
+end
+
+endmodule
+
+```
+

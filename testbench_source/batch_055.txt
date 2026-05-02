@@ -1,0 +1,270 @@
+MODULE 1:
+Topic: pipeline
+```verilog
+module up_down_counter (
+    input clk,
+    input async_reset,
+    input [1:0] enable,
+    output reg [1:0] count
+);
+
+reg [1:0] count_reg1, count_reg2;
+
+always @(posedge clk) begin
+    if (async_reset) begin
+        count_reg1 <= 2'b00;
+        count_reg2 <= 2'b00;
+    end
+    else begin
+        count_reg1 <= count_reg2;
+        count_reg2 <= count;
+    end
+end
+
+always @(*) begin
+    case (enable)
+        2'b00: count = count_reg1;
+        2'b01: count = count_reg1 + 2'b01;
+        2'b10: count = count_reg1 - 2'b01;
+        default: count = count_reg1;
+    endcase
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: pipeline
+```verilog
+module OptimizationBarrier_TLBEntryData_232(	// @[package.scala:267:30]
+  input         clock,	// @[package.scala:267:30]
+  input         reset,	// @[package.scala:267:30]
+  input  [19:0] io_x_ppn,	// @[package.scala:268:18]
+  input         io_x_u,	// @[package.scala:268:18]
+  input         io_x_g,	// @[package.scala:268:18]
+  input         io_x_ae_ptw,	// @[package.scala:268:18]
+  input         io_x_ae_final,	// @[package.scala:268:18]
+  input         io_x_ae_stage2,	// @[package.scala:268:18]
+  input         io_x_pf,	// @[package.scala:268:18]
+  input         io_x_gf,	// @[package.scala:268:18]
+  input         io_x_sw,	// @[package.scala:268:18]
+  input         io_x_sx,	// @[package.scala:268:18]
+  input         io_x_sr,	// @[package.scala:268:18]
+  input         io_x_hw,	// @[package.scala:268:18]
+  input         io_x_hx,	// @[package.scala:268:18]
+  input         io_x_hr,	// @[package.scala:268:18]
+  input         io_x_pw,	// @[package.scala:268:18]
+  input         io_x_px,	// @[package.scala:268:18]
+  input         io_x_pr,	// @[package.scala:268:18]
+  input         io_x_ppp,	// @[package.scala:268:18]
+  input         io_x_pal,	// @[package.scala:268:18]
+  input         io_x_paa,	// @[package.scala:268:18]
+  input         io_x_eff,	// @[package.scala:268:18]
+  input         io_x_c,	// @[package.scala:268:18]
+  input         io_x_fragmented_superpage,	// @[package.scala:268:18]
+  output        io_y_u,	// @[package.scala:268:18]
+  output        io_y_ae_ptw,	// @[package.scala:268:18]
+  output        io_y_ae_final,	// @[package.scala:268:18]
+  output        io_y_ae_stage2,	// @[package.scala:268:18]
+  output        io_y_pf,	// @[package.scala:268:18]
+  output        io_y_gf,	// @[package.scala:268:18]
+  output        io_y_sw,	// @[package.scala:268:18]
+  output        io_y_sx,	// @[package.scala:268:18]
+  output        io_y_sr,	// @[package.scala:268:18]
+  output        io_y_hw,	// @[package.scala:268:18]
+  output        io_y_hx,	// @[package.scala:268:18]
+  output        io_y_hr,	// @[package.scala:268:18]
+  output        io_y_pw,	// @[package.scala:268:18]
+  output        io_y_px,	// @[package.scala:268:18]
+  output        io_y_pr,	// @[package.scala:268:18]
+  output        io_y_ppp,	// @[package.scala:268:18]
+  output        io_y_pal,	// @[package.scala:268:18]
+  output        io_y_paa,	// @[package.scala:268:18]
+  output        io_y_eff,	// @[package.scala:268:18]
+  output        io_y_c	// @[package.scala:268:18]
+);
+
+  wire [19:0] io_x_ppn_0 = io_x_ppn;	// @[package.scala:267:30]
+  wire        io_x_u_0 = io_x_u;	// @[package.scala:267:30]
+  wire        io_x_g_0 = io_x_g;	// @[package.scala:267:30]
+  wire        io_x_ae_ptw_0 = io_x_ae_ptw;	// @[package.scala:267:30]
+  wire        io_x_ae_final_0 = io_x_ae_final;	// @[package.scala:267:30]
+  wire        io_x_ae_stage2_0 = io_x_ae_stage2;	// @[package.scala:267:30]
+  wire        io_x_pf_0 = io_x_pf;	// @[package.scala:267:30]
+  wire        io_x_gf_0 = io_x_gf;	// @[package.scala:267:30]
+  wire        io_x_sw_0 = io_x_sw;	// @[package.scala:267:30]
+  wire        io_x_sx_0 = io_x_sx;	// @[package.scala:267:30]
+  wire        io_x_sr_0 = io_x_sr;	// @[package.scala:267:30]
+  wire        io_x_hw_0 = io_x_hw;	// @[package.scala:267:30]
+  wire        io_x_hx_0 = io_x_hx;	// @[package.scala:267:30]
+  wire        io_x_hr_0 = io_x_hr;	// @[package.scala:267:30]
+  wire        io_x_pw_0 = io_x_pw;	// @[package.scala:267:30]
+  wire        io_x_px_0 = io_x_px;	// @[package.scala:267:30]
+  wire        io_x_pr_0 = io_x_pr;	// @[package.scala:267:30]
+  wire        io_x_ppp_0 = io_x_ppp;	// @[package.scala:267:30]
+  wire        io_x_pal_0 = io_x_pal;	// @[package.scala:267:30]
+  wire        io_x_paa_0 = io_x_paa;	// @[package.scala:267:30]
+  wire        io_x_eff_0 = io_x_eff;	// @[package.scala:267:30]
+  wire        io_x_c_0 = io_x_c;	// @[package.scala:267:30]
+  wire        io_x_fragmented_superpage_0 = io_x_fragmented_superpage;	// @[package.scala:267:30]
+  wire [19:0] io_y_ppn = io_x_ppn_0;	// @[package.scala:267:30]
+  wire        io_y_u_0 = io_x_u_0;	// @[package.scala:267:30]
+  wire        io_y_g = io_x_g_0;	// @[package.scala:267:30]
+  wire        io_y_ae_ptw_0 = io_x_ae_ptw_0;	// @[package.scala:267:30]
+  wire        io_y_ae_final_0 = io_x_ae_final_0;	// @[package.scala:267:30]
+  wire        io_y_ae_stage2_0 = io_x_ae_stage2_0;	// @[package.scala:267:30]
+  wire        io_y_pf_0 = io_x_pf_0;	// @[package.scala:267:30]
+  wire        io_y_gf_0 = io_x_gf_0;	// @[package.scala:267:30]
+  wire        io_y_sw_0 = io_x_sw_0;	// @[package.scala:267:30]
+  wire        io_y_sx_0 = io_x_sx_0;	// @[package.scala:267:30]
+  wire        io_y_sr_0 = io_x_sr_0;	// @[package.scala:267:30]
+  wire        io_y_hw_0 = io_x_hw_0;	// @[package.scala:267:30]
+  wire        io_y_hx_0 = io_x_hx_0;	// @[package.scala:267:30]
+  wire        io_y_hr_0 = io_x_hr_0;	// @[package.scala:267:30]
+  wire        io_y_pw_0 = io_x_pw_0;	// @[package.scala:267:30]
+  wire        io_y_px_0 = io_x_px_0;	// @[package.scala:267:30]
+  wire        io_y_pr_0 = io_x_pr_0;	// @[package.scala:267:30]
+  wire        io_y_ppp_0 = io_x_ppp_0;	// @[package.scala:267:30]
+  wire        io_y_pal_0 = io_x_pal_0;	// @[package.scala:267:30]
+  wire        io_y_paa_0 = io_x_paa_0;	// @[package.scala:267:30]
+  wire        io_y_eff_0 = io_x_eff_0;	// @[package.scala:267:30]
+  wire        io_y_c_0 = io_x_c_0;	// @[package.scala:267:30]
+  wire        io_y_fragmented_superpage = io_x_fragmented_superpage_0;	// @[package.scala:267:30]
+  assign io_y_u = io_y_u_0;	// @[package.scala:267:30]
+  assign io_y_ae_ptw = io_y_ae_ptw_0;	// @[package.scala:267:30]
+  assign io_y_ae_final = io_y_ae_final_0;	// @[package.scala:267:30]
+  assign io_y_ae_stage2 = io_y_ae_stage2_0;	// @[package.scala:267:30]
+  assign io_y_pf = io_y_pf_0;	// @[package.scala:267:30]
+  assign io_y_gf = io_y_gf_0;	// @[package.scala:267:30]
+  assign io_y_sw = io_y_sw_0;	// @[package.scala:267:30]
+  assign io_y_sx = io_y_sx_0;	// @[package.scala:267:30]
+  assign io_y_sr = io_y_sr_0;	// @[package.scala:267:30]
+  assign io_y_hw = io_y_hw_0;	// @[package.scala:267:30]
+  assign io_y_hx = io_y_hx_0;	// @[package.scala:267:30]
+  assign io_y_hr = io_y_hr_0;	// @[package.scala:267:30]
+  assign io_y_pw = io_y_pw_0;	// @[package.scala:267:30]
+  assign io_y_px = io_y_px_0;	// @[package.scala:267:30]
+  assign io_y_pr = io_y_pr_0;	// @[package.scala:267:30]
+  assign io_y_ppp = io_y_ppp_0;	// @[package.scala:267:30]
+  assign io_y_pal = io_y_pal_0;	// @[package.scala:267:30]
+  assign io_y_paa = io_y_paa_0;	// @[package.scala:267:30]
+  assign io_y_eff = io_y_eff_0;	// @[package.scala:267:30]
+  assign io_y_c = io_y_c_0;	// @[package.scala:267:30]
+endmodule
+```
+
+MODULE 3:
+Topic: pipeline
+```verilog
+module shift_register (
+    input clk,
+    input [7:0] data,
+    output [7:0] shifted_data
+);
+
+reg [7:0] reg1, reg2, reg3, reg4, reg5, reg6, reg7, reg8;
+
+always @(posedge clk) begin
+    reg1 <= data;
+    reg2 <= reg1;
+    reg3 <= reg2;
+    reg4 <= reg3;
+    reg5 <= reg4;
+    reg6 <= reg5;
+    reg7 <= reg6;
+    reg8 <= reg7;
+end
+
+assign shifted_data = {reg8, reg1};
+
+endmodule
+```
+
+MODULE 4:
+Topic: pipeline
+```verilog
+module up_down_counter (
+    input clk,
+    input rst,
+    input up_down,
+    output reg [2:0] count
+);
+
+reg [2:0] count_reg1;
+reg [2:0] count_reg2;
+
+always @(posedge clk) begin
+    if (rst) begin
+        count_reg1 <= 3'b0;
+        count_reg2 <= 3'b0;
+    end
+    else begin
+        count_reg1 <= count;
+        count_reg2 <= count_reg1;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        count <= 3'b0;
+    end
+    else begin
+        if (up_down) begin
+            count <= count_reg2 + 3'b1;
+        end
+        else begin
+            count <= count_reg2 - 3'b1;
+        end
+    end
+end
+
+endmodule
+```
+
+MODULE 5:
+Topic: pipeline
+```verilog
+module wasca_altpll_1_dffpipe_l2c (
+  input clock,
+  input clrn,
+  input [0:0] d,
+  output [0:0] q
+);
+
+  reg [0:0] dffe4a;
+  reg [0:0] dffe5a;
+  reg [0:0] dffe6a;
+
+  always @(posedge clock or negedge clrn) begin
+    if (!clrn) begin
+      dffe4a <= 1'b0;
+    end else begin
+      dffe4a <= d;
+    end
+  end
+
+  always @(posedge clock or negedge clrn) begin
+    if (!clrn) begin
+      dffe5a <= 1'b0;
+    end else begin
+      dffe5a <= dffe4a;
+    end
+  end
+
+  always @(posedge clock or negedge clrn) begin
+    if (!clrn) begin
+      dffe6a <= 1'b0;
+    end else begin
+      dffe6a <= dffe5a;
+    end
+  end
+
+  assign q = dffe6a;
+
+  assign ena = 1'b1;
+  assign prn = 1'b1;
+  assign sclr = 1'b0;
+
+endmodule
+```
+

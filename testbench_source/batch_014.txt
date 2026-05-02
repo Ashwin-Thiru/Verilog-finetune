@@ -1,0 +1,507 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module fsm_0101_sequence_detection (
+  input clk,
+  input reset,
+  input data,
+  output reg match
+);
+
+  // Define the states
+  parameter STATE_IDLE = 2'b00;
+  parameter STATE_WAIT_1 = 2'b01;
+  parameter STATE_WAIT_2 = 2'b10;
+  parameter STATE_MATCH = 2'b11;
+  
+  // Define the state register and next state logic
+  reg [1:0] state, next_state;
+  
+  always @ (posedge clk) begin
+    if (reset) begin
+      state <= STATE_IDLE;
+    end else begin
+      state <= next_state;
+    end
+  end
+  
+  // Define the next state logic
+  always @ (*) begin
+    case (state)
+      STATE_IDLE: begin
+        if (data == 1'b0) begin
+          next_state = STATE_WAIT_1;
+        end else begin
+          next_state = STATE_IDLE;
+        end
+      end
+      
+      STATE_WAIT_1: begin
+        if (data == 1'b1) begin
+          next_state = STATE_WAIT_2;
+        end else begin
+          next_state = STATE_IDLE;
+        end
+      end
+      
+      STATE_WAIT_2: begin
+        if (data == 1'b0) begin
+          next_state = STATE_MATCH;
+        end else begin
+          next_state = STATE_IDLE;
+        end
+      end
+      
+      STATE_MATCH: begin
+        next_state = STATE_IDLE;
+      end
+    endcase
+  end
+  
+  // Define the match output
+  always @ (*) begin
+    if (state == STATE_MATCH) begin
+      match = 1'b1;
+    end else begin
+      match = 1'b0;
+    end
+  end
+  
+endmodule
+
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module fsm_pattern_detection (
+  input clk,
+  input reset,
+  input data,
+  output reg pattern_detected
+);
+
+  parameter S0 = 2'b00, S1 = 2'b01, S2 = 2'b10, S3 = 2'b11;
+  reg [1:0] state, next_state;
+
+  always @(posedge clk) begin
+    if (reset) begin
+      state <= S0;
+      pattern_detected <= 1'b0;
+    end
+    else begin
+      state <= next_state;
+      pattern_detected <= 1'b0;
+      case (state)
+        S0: begin
+          if (data == 1'b1)
+            next_state = S1;
+          else
+            next_state = S0;
+        end
+        S1: begin
+          if (data == 1'b0)
+            next_state = S2;
+          else
+            next_state = S0;
+        end
+        S2: begin
+          if (data == 1'b1)
+            next_state = S3;
+          else
+            next_state = S0;
+        end
+        S3: begin
+          pattern_detected <= 1'b1;
+          next_state = S0;
+        end
+      endcase
+    end
+  end
+endmodule
+
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+module FSM_Convert_Float_To_Fixed(
+		
+    //INPUTS
+    input wire CLK, //system clock
+    input wire RST_FF, //system reset 
+    input wire Exp_out, // INDICA SI EL VALOR DEL EXPONENTE ES MAYOR QUE 127 
+    input wire Begin_FSM_FF, //inicia la maquina de estados 
+    input wire [7:0] Exp, //CONTIENE EL EXPONENTE DEL NUMERO EN PUNTO FLOTANTE 
+    // OUTPUTS		
+    output reg EN_REG1, //ENABLE PARA EL REGISTRO QUE GUARDA EL NUMERO EN PUNTO FLOTANTE 
+    output reg LOAD, //SELECCION PARA EL REGISTRO DE DESPLAZAMIENTOS 
+    output reg MS_1, // SELECCION DEL MUX 1 (VALOR INICIAL DEL EXPONENTE , VALOR MODIFICADO DEL EXPONENTE)
+    output reg ACK_FF, // INDICA QUE LA CONVERSION FUE REALIZADA
+    output reg EN_MS_1,
+    output reg EN_REG2,
+    output reg RST
+    );
+        
+parameter [3:0]  //se definen los estados que se utilizaran en la maquina
+     a = 4'b0000,
+     b = 4'b0001,
+     c = 4'b0010,
+     d = 4'b0011,
+     e = 4'b0100,
+     f = 4'b0101,
+     g = 4'b0110,
+     h = 4'b0111,
+     i = 4'b1000;
+					
+reg [3:0] state_reg, state_next ; //state registers declaration
+
+always @(posedge CLK, posedge RST_FF)
+	
+	if (RST_FF) begin
+		state_reg <= a;	
+	end
+	
+	else begin
+		state_reg <= state_next;
+	end
+
+    always @*
+    begin
+        state_next = state_reg;    
+        EN_REG1 = 1'b0;
+        EN_REG2 = 1'b0;
+        ACK_FF = 1'b0;
+        EN_MS_1=1'b0;
+        MS_1=1'b0;
+        LOAD = 1'b0;
+        RST = 1'b0;
+        
+        case(state_reg)
+            a: 
+            begin  
+                if(Begin_FSM_FF) 
+                    begin
+                    RST = 1'b1;
+                    ACK_FF = 1'b0;    
+                    state_next = b;
+                    end
+                else
+                    state_next = a;       
+            end
+                
+            b: 
+            begin
+                EN_REG1 = 1'b1;    
+                state_next = c;
+            end
+            
+            c:
+            begin
+                EN_MS_1 = 1'b1;
+                if(Exp_out) //if exponent greater than 127
+                    MS_1 = 1'b1; //select modified exponent
+                else
+                    MS_1 = 1'b0; //select initial exponent
+                if(Exp == 8'b01111111) //if exponent is all 1's
+                    state_next = i; //go to state i
+                else
+                    state_next = d; //go to state d
+            end
+            
+            d:
+            begin
+                EN_MS_1 = 1'b1;
+                MS_1 = 1'b1; //select modified exponent
+                state_next = e;
+            end
+            
+            e:
+            begin
+                state_next = f;
+            end 
+                   		
+            f:
+            begin
+                LOAD = 1'b1;
+                state_next = g;
+            end
+        
+            g:
+            begin
+                EN_REG2 = 1'b1;
+                state_next = h;
+            end
+                
+            h:
+            begin
+                ACK_FF = 1'b1;
+                if(RST_FF)
+                     state_next = a;
+                else
+                    state_next = h;
+            end
+            
+            i:
+            begin
+                state_next = f;
+            end
+               
+       default:
+       state_next=a;
+       endcase
+    end
+
+endmodule
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module mc_ctrl (
+	clk		,
+	rstn		,
+	mc_start_i		,
+	mc_done_o		,
+  mvd_access_o    ,
+	chroma_start_o		,
+	chroma_sel_o		,
+	chroma_done_i		,
+	tq_start_o		,
+	tq_sel_o		,
+	tq_done_i		
+);
+
+// ********************************************
+//
+//    INPUT / OUTPUT DECLARATION
+//
+// ********************************************
+
+input 	 [1-1:0] 	 clk 	         ; // clk signal 
+input 	 [1-1:0] 	 rstn 	         ; // asynchronous reset
+input 	 [1-1:0] 	 mc_start_i 	 ; // mc start 
+output 	 [1-1:0] 	 mc_done_o 	 ; // mc done 
+output             mvd_access_o ;
+output 	 [1-1:0] 	 chroma_start_o  ; // chroma interpolation start 
+output 	 [1-1:0] 	 chroma_sel_o 	 ; // chroma interpolation select: 0:cb, 1:cr
+input 	 [1-1:0] 	 chroma_done_i 	 ; // chroma interpolation done 
+output 	 [1-1:0] 	 tq_start_o 	 ; // tq start 
+output 	 [2-1:0] 	 tq_sel_o 	 ; // tq sel: 00:luma, 10:cb, 11:cr
+input 	 [1-1:0] 	 tq_done_i 	 ; // tq done 
+
+// ********************************************
+//
+//    PARAMETER DECLARATION
+//
+// ********************************************
+
+parameter IDLE         = 3'd0;
+parameter TQ_LUMA      = 3'd1;
+parameter MC_CB        = 3'd2;
+parameter TQ_CB        = 3'd3;
+parameter MC_CR        = 3'd4;
+parameter TQ_CR        = 3'd5;
+parameter DONE         = 3'd6;
+
+// ********************************************
+//
+//    WIRE / REG DECLARATION
+//
+// ********************************************
+reg      [3-1:0]        current_state, next_state;
+
+// ********************************************
+//
+//    Combinational Logic
+//
+// ********************************************
+always @(*) begin
+                next_state = IDLE;
+    case(current_state) 
+        IDLE : begin
+            if ( mc_start_i)
+                next_state = TQ_LUMA;
+            else
+                next_state = IDLE;
+        end
+        TQ_LUMA: begin
+            if ( tq_done_i)
+                next_state = MC_CB;
+            else
+                next_state = TQ_LUMA;
+        end
+        MC_CB: begin
+            if ( chroma_done_i)
+                next_state = TQ_CB;
+            else
+                next_state = MC_CB;
+        end
+        TQ_CB: begin
+            if ( tq_done_i)
+                next_state = MC_CR;
+            else
+                next_state = TQ_CB;
+        end
+        MC_CR: begin
+            if ( chroma_done_i)
+                next_state = TQ_CR;
+            else
+                next_state = MC_CR;
+        end
+        TQ_CR: begin
+            if ( tq_done_i)
+                next_state = DONE;
+            else
+                next_state = TQ_CR;
+        end
+        DONE: begin
+            next_state = IDLE;
+        end
+    endcase
+end
+
+
+assign 	 mc_done_o 	 = (current_state == DONE); 
+assign 	 chroma_start_o  = (current_state == TQ_LUMA && next_state == MC_CB)  ||
+                           (current_state == TQ_CB   && next_state == MC_CR)  ; 
+assign 	 chroma_sel_o 	 = (current_state == MC_CR) ? 1'b1 : 1'b0; 
+assign 	 tq_start_o 	 = (current_state == IDLE    && next_state == TQ_LUMA)||
+                           (current_state == MC_CB   && next_state == TQ_CB)  || 
+                           (current_state == MC_CR   && next_state == TQ_CR)  ; 
+assign 	 tq_sel_o 	 = (current_state == TQ_LUMA) ? 2'b00 :
+                           (current_state == TQ_CB  ) ? 2'b10 :
+                           (current_state == TQ_CR  ) ? 2'b11 : 2'b00;
+
+assign mvd_access_o = ( current_state == TQ_LUMA );
+
+// ********************************************
+//
+//    Sequential Logic
+//
+// ********************************************
+
+always @ (posedge clk or negedge rstn) begin
+    if(~rstn) begin
+        current_state <= IDLE;
+    end
+    else begin
+        current_state <= next_state;
+    end
+end
+
+
+endmodule
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module float_to_double(
+        input_a,
+        input_a_stb,
+        output_z_ack,
+        clk,
+        rst,
+        output_z,
+        output_z_stb,
+        input_a_ack);
+
+  input     clk;
+  input     rst;
+
+  input     [31:0] input_a;
+  input     input_a_stb;
+  output    input_a_ack;
+
+  output    [63:0] output_z;
+  output    output_z_stb;
+  input     output_z_ack;
+
+  reg       s_output_z_stb;
+  reg       [63:0] s_output_z;
+  reg       s_input_a_ack;
+
+  reg       [1:0] state;
+  parameter get_a         = 2'd0,
+            convert_0     = 2'd1,
+            normalise_0   = 2'd2,
+            put_z         = 2'd3;
+
+  reg [63:0] z;
+  reg [10:0] z_e;
+  reg [52:0] z_m;
+  reg [31:0] a;
+
+  always @(posedge clk)
+  begin
+
+    case(state)
+
+      get_a:
+      begin
+        s_input_a_ack <= 1;
+        if (s_input_a_ack && input_a_stb) begin
+          a <= input_a;
+          s_input_a_ack <= 0;
+          state <= convert_0;
+        end
+      end
+
+      convert_0:
+      begin
+        z[63] <= a[31];
+        z[62:52] <= (a[30:23] - 127) + 1023;
+        z[51:0] <= {a[22:0], 29'd0};
+        if (a[30:23] == 255) begin
+            z[62:52] <= 2047;
+        end
+        state <= put_z;
+        if (a[30:23] == 0) begin
+            if (a[23:0]) begin
+                state <= normalise_0;
+                z_e <= 897;
+                z_m <= {1'd0, a[22:0], 29'd0};
+            end
+            z[62:52] <= 0;
+        end
+      end
+
+      normalise_0:
+      begin
+        if (z_m[52]) begin
+          z[62:52] <= z_e;
+          z[51:0] <= z_m[51:0];
+          state <= put_z;
+        end else begin
+          z_m <= {z_m[51:0], 1'd0};
+          z_e <= z_e - 1;
+        end
+      end
+
+      put_z:
+      begin
+        s_output_z_stb <= 1;
+        s_output_z <= z;
+        if (s_output_z_stb && output_z_ack) begin
+          s_output_z_stb <= 0;
+          state <= get_a;
+        end
+      end
+
+    endcase
+
+    if (rst == 1) begin
+      state <= get_a;
+      s_input_a_ack <= 0;
+      s_output_z_stb <= 0;
+    end
+
+  end
+  assign input_a_ack = s_input_a_ack;
+  assign output_z_stb = s_output_z_stb;
+  assign output_z = s_output_z;
+
+endmodule
+```
+

@@ -1,0 +1,149 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module majority_gate (
+    input a,
+    input b,
+    input c,
+    output reg out
+);
+
+always @(*) begin
+    if ((a & b) | (a & c) | (b & c)) begin
+        out <= 1;
+    end else begin
+        out <= 0;
+    end
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module shift(clk, data_in, shamt, fnc, data_out);
+    input clk;
+    input [31:0] data_in;
+    input [4:0] shamt;
+    input [1:0] fnc;
+    output reg [31:0] data_out;
+
+    always @(posedge clk) begin
+        case (fnc)
+            2'b00: data_out <= data_in << shamt; // sll
+            2'b01: data_out <= data_in >> shamt; // slr
+            2'b10: begin // sar
+                if (data_in[31] == 1) begin
+                    data_out <= ~(32'hFFFFFFFF >> shamt) | (data_in >> shamt);
+                end else begin
+                    data_out <= data_in >> shamt;
+                end
+            end
+            default: data_out <= 32'hxxxxxxxx;
+        endcase
+    end
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module mux_2to1(
+    input a,
+    input b,
+    input sel_b1,
+    input sel_b2,
+    output reg out_always
+);
+
+always @(*) begin
+    out_always = (sel_b2 & ~sel_b1) ? b : a;
+end
+
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module signal_mux(
+    input  A1,
+    input  A2,
+    input  B1,
+    input  B2,
+    output X
+);
+
+    reg X_reg;
+    
+    always @(*) begin
+        if (A1 && A2) begin
+            X_reg = B1;
+        end
+        else if (!A1 && A2) begin
+            X_reg = B2;
+        end
+        else if (A1 && !A2) begin
+            X_reg = B1;
+        end
+        else if (!A1 && !A2) begin
+            X_reg = B2;
+        end
+    end
+    
+    assign X = X_reg;
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module karnaugh_map(
+  input wire A, B, C, D, E,
+  output reg F
+);
+
+always @(*) begin
+  case ({A,B,C,D,E})
+    5'b00000: F = 1;
+    5'b00001: F = 0;
+    5'b00011: F = 0;
+    5'b00010: F = 0;
+    5'b00110: F = 0;
+    5'b00111: F = 1;
+    5'b00101: F = 1;
+    5'b00100: F = 0;
+    5'b01100: F = 0;
+    5'b01101: F = 1;
+    5'b01111: F = 1;
+    5'b01110: F = 1;
+    5'b01010: F = 1;
+    5'b01011: F = 1;
+    5'b01001: F = 1;
+    5'b01000: F = 0;
+    5'b11000: F = 1;
+    5'b11001: F = 0;
+    5'b11011: F = 0;
+    5'b11010: F = 0;
+    5'b11110: F = 1;
+    5'b11111: F = 1;
+    5'b11101: F = 0;
+    5'b11100: F = 0;
+    5'b10100: F = 0;
+    5'b10101: F = 0;
+    5'b10111: F = 0;
+    5'b10110: F = 0;
+    5'b10010: F = 1;
+    5'b10011: F = 1;
+    5'b10001: F = 0;
+    5'b10000: F = 0;
+    default: F = 0;
+  endcase
+end
+
+endmodule
+```
+

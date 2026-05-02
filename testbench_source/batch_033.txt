@@ -1,0 +1,255 @@
+MODULE 1:
+Topic: memory
+```verilog
+module binary_multiplier (
+    input [7:0] A,
+    input [7:0] B,
+    output reg [15:0] Y
+);
+
+reg [15:0] temp;
+
+integer i;
+
+always @(*) begin
+    temp = 16'b0;
+    for (i = 0; i < 8; i = i + 1) begin
+        if (A[i]) begin
+            temp = temp + (B << i);
+        end
+    end
+    Y = temp;
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module spi_slave(
+    input clk,
+    input rst,
+    input ss,
+    input mosi,
+    output miso,
+    input sck,
+    output done,
+    input [7:0] din,
+    output [7:0] dout
+);
+
+reg mosi_d, mosi_q;
+reg ss_d, ss_q;
+reg sck_d, sck_q;
+reg sck_old_d, sck_old_q;
+reg [7:0] data_d, data_q;
+reg done_d, done_q;
+reg [2:0] bit_ct_d, bit_ct_q;
+reg [7:0] dout_d, dout_q;
+reg miso_d, miso_q;
+
+assign miso = miso_q;
+assign done = done_q;
+assign dout = dout_q;
+
+always @(*) begin
+    ss_d = ss;
+    mosi_d = mosi;
+    miso_d = miso_q;
+    sck_d = sck;
+    sck_old_d = sck_q;
+    data_d = data_q;
+    done_d = 1'b0;
+    bit_ct_d = bit_ct_q;
+    dout_d = dout_q;
+
+    if (ss_q) begin
+        bit_ct_d = 3'b0;
+        data_d = din;
+        miso_d = data_q[7];
+    end else begin
+        if (!sck_old_q && sck_q) begin // rising edge
+            data_d = {data_q[6:0], mosi_q};
+            bit_ct_d = bit_ct_q + 1'b1;
+            if (bit_ct_q == 3'b111) begin
+                dout_d = {data_q[6:0], mosi_q};
+                done_d = 1'b1;
+                data_d = din;
+            end
+        end else if (sck_old_q && !sck_q) begin // falling edge
+            miso_d = data_q[7];
+        end
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        done_q <= 1'b0;
+        bit_ct_q <= 3'b0;
+        dout_q <= 8'b0;
+        miso_q <= 1'b1;
+    end else begin
+        done_q <= done_d;
+        bit_ct_q <= bit_ct_d;
+        dout_q <= dout_d;
+        miso_q <= miso_d;
+    end
+
+    sck_q <= sck_d;
+    mosi_q <= mosi_d;
+    ss_q <= ss_d;
+    data_q <= data_d;
+    sck_old_q <= sck_old_d;
+
+end
+
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module MinMax (
+  input [n-1:0] in,
+  output reg min,
+  output reg max
+);
+
+parameter n = 4; // number of input signals
+
+integer i;
+
+always @(*) begin
+  min = in[0];
+  max = in[0];
+
+  for (i = 1; i < n; i = i + 1) begin
+    if (in[i] < min) begin
+      min = in[i];
+    end
+    if (in[i] > max) begin
+      max = in[i];
+    end
+  end
+end
+
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module spw_light_connecting (
+                              // inputs:
+                               address,
+                               clk,
+                               in_port,
+                               reset_n,
+
+                              // outputs:
+                               readdata
+                            )
+;
+
+  output  [ 31: 0] readdata;
+  input   [  1: 0] address;
+  input            clk;
+  input            in_port;
+  input            reset_n;
+
+
+  wire             clk_en;
+  wire             data_in;
+  wire             read_mux_out;
+  reg     [ 31: 0] readdata;
+  
+  // Implement clock enable signal
+  assign clk_en = 1;
+  
+  // Implement input data signal
+  assign data_in = in_port;
+  
+  // Implement read_mux_out signal
+  assign read_mux_out = (address == 2'b00) ? data_in : 32'b0;
+  
+  // Implement readdata register
+  always @(posedge clk or negedge reset_n)
+    begin
+      if (reset_n == 0)
+          readdata <= 0;
+      else if (clk_en)
+          readdata <= read_mux_out;
+    end
+
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module bt_transmitter (
+  input [n-1:0] data_in,
+  input clk,
+  input reset,
+  output reg tx_en,
+  output reg [m-1:0] tx_out
+);
+  parameter n = 8;
+  parameter m = 8;
+  parameter baud_rate = 9600;
+  integer counter;
+  reg [n-1:0] data_reg;
+
+  always @(posedge clk or posedge reset) begin
+    if (reset) begin
+      counter <= 0;
+      tx_en <= 0;
+      tx_out <= 0;
+    end else begin
+      if (counter == 0) begin
+        counter <= (50_000_000 / baud_rate) - 1;
+        data_reg <= data_in;
+        tx_en <= 1;
+        tx_out <= data_reg;
+        data_reg <= data_reg >> 1;
+      end else begin
+        counter <= counter - 1;
+      end
+    end
+  end
+endmodule
+
+module bt_receiver (
+  input [n-1:0] rx_in,
+  input clk,
+  input reset,
+  output reg rx_en,
+  output reg [m-1:0] data_out
+);
+  parameter n = 8;
+  parameter m = 8;
+  parameter baud_rate = 9600;
+  integer counter;
+  reg [n-1:0] data_reg;
+
+  always @(posedge clk or posedge reset) begin
+    if (reset) begin
+      counter <= 0;
+      rx_en <= 0;
+      data_out <= 0;
+    end else begin
+      if (counter == 0) begin
+        counter <= (50_000_000 / baud_rate) - 1;
+        data_reg <= rx_in;
+        rx_en <= 1;
+        data_out <= data_reg;
+        data_reg <= data_reg >> 1;
+      end else begin
+        counter <= counter - 1;
+      end
+    end
+  end
+endmodule
+```
+

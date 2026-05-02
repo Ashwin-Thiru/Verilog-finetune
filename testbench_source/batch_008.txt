@@ -1,0 +1,336 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module fsm_consecutive_ones_counter (
+  input clk,
+  input reset,
+  input data,
+  output reg match
+);
+
+  // Define the states
+  parameter S0 = 2'b00;
+  parameter S1 = 2'b01;
+  parameter S2 = 2'b10;
+  parameter S3 = 2'b11;
+
+  // Define the state register and initialize to S0
+  reg [1:0] state = S0;
+
+  // Define the next state logic
+  always @(posedge clk, negedge reset) begin
+    if (reset == 1'b0) begin
+      state <= S0;
+    end else begin
+      case (state)
+        S0: begin
+          if (data == 1'b1) begin
+            state <= S1;
+          end else begin
+            state <= S0;
+          end
+        end
+        S1: begin
+          if (data == 1'b1) begin
+            state <= S2;
+          end else begin
+            state <= S0;
+          end
+        end
+        S2: begin
+          if (data == 1'b1) begin
+            state <= S3;
+          end else begin
+            state <= S0;
+          end
+        end
+        S3: begin
+          if (data == 1'b1) begin
+            state <= S0;
+          end else begin
+            state <= S3;
+          end
+        end
+      endcase
+    end
+  end
+
+  // Define the output logic
+  always @(state, data) begin
+    if (state == S3) begin
+      match <= 1'b1;
+    end else begin
+      match <= 1'b0;
+    end
+  end
+
+endmodule
+
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module POR (
+  input vdd,
+  input rst_n,
+  input rst_delay,
+  output reg rst
+);
+
+parameter t_pulse = 100; // reset pulse duration (ns)
+parameter t_delay = 100; // reset delay time (ns)
+
+reg [1:0] state; // state machine variable
+
+// Define voltage threshold
+parameter VTHRESH = 1.2;
+
+// State machine states
+parameter IDLE = 2'b00;
+parameter RESET = 2'b01;
+parameter DELAY = 2'b10;
+
+// State machine logic
+always @(posedge vdd or negedge rst_n) begin
+  if (rst_n == 0) begin
+    state <= IDLE;
+  end else begin
+    case (state)
+      IDLE: begin
+        if (vdd > VTHRESH) begin
+          state <= RESET;
+        end
+      end
+      RESET: begin
+        rst <= 0;
+        if (rst_n == 0) begin
+          state <= IDLE;
+        end else begin
+          state <= DELAY;
+        end
+      end
+      DELAY: begin
+        if (rst_delay == 1) begin
+          state <= IDLE;
+          rst <= 1;
+        end
+      end
+    endcase
+  end
+end
+
+// Pulse duration timer
+always @(posedge vdd or negedge rst_n) begin
+  if (rst_n == 0) begin
+    rst <= 1;
+  end else begin
+    if (state == RESET) begin
+      #t_pulse rst <= 1;
+    end
+  end
+end
+
+endmodule
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+
+module RefModule (
+  input in,
+  input [9:0] state,
+  output [9:0] next_state,
+  output out1,
+  output out2
+);
+
+  assign out1 = state[8] | state[9];
+  assign out2 = state[7] | state[9];
+
+  assign next_state[0] = !in && (|state[4:0] | state[7] | state[8] | state[9]);
+  assign next_state[1] = in && (state[0] | state[8] | state[9]);
+  assign next_state[2] = in && state[1];
+  assign next_state[3] = in && state[2];
+  assign next_state[4] = in && state[3];
+  assign next_state[5] = in && state[4];
+  assign next_state[6] = in && state[5];
+  assign next_state[7] = in && (state[6] | state[7]);
+  assign next_state[8] = !in && state[5];
+  assign next_state[9] = !in && state[6];
+
+endmodule
+
+
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module sequence_detector (
+  input in,
+  output out
+);
+
+  // Define the states of the state machine
+  parameter S0 = 2'b00;
+  parameter S1 = 2'b01;
+  parameter S2 = 2'b10;
+  
+  // Define the current state variable
+  reg [1:0] state;
+  
+  // Define the output signal
+  reg out_reg;
+  
+  // Implement the state machine using a case statement
+  always @(posedge in) begin
+    case (state)
+      S0: begin
+        if (in == 1'b1) begin
+          state <= S1;
+        end else begin
+          state <= S0;
+        end
+      end
+      S1: begin
+        if (in == 1'b0) begin
+          state <= S2;
+        end else begin
+          state <= S0;
+        end
+      end
+      S2: begin
+        if (in == 1'b1) begin
+          state <= S0;
+          out_reg <= 1'b1;
+        end else begin
+          state <= S0;
+        end
+      end
+    endcase
+  end
+  
+  // Assign the output signal
+  assign out = out_reg;
+  
+endmodule
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module strobe_gen(
+    input clk_sys,
+    input ss11, ss12, ss13, ss14, ss15,
+    input ok$, zw, oken,
+    input mode, step,
+    input strob_fp,
+    input strobb_fp,
+    output ldstate,
+    output got,
+    output strob1,
+    output strob1b,
+    output strob2,
+    output strob2b
+);
+
+    // Define states
+    localparam S_GOT   = 3'd0;
+    localparam S_GOTW  = 3'd1;
+    localparam S_ST1   = 3'd2;
+    localparam S_ST1W  = 3'd3;
+    localparam S_ST1B  = 3'd4;
+    localparam S_PGOT  = 3'd5;
+    localparam S_ST2   = 3'd6;
+    localparam S_ST2B  = 3'd7;
+
+    // Define signals
+    wire if_busy = zw & oken;
+    wire es1 = ss11 | (ss12 & ok$) | (ss13 & ok$) | ss14 | ss15;
+    wire has_strob2 = ss11 | ss12;
+    wire no_strob2 = ss13 | ss14 | ss15;
+
+    // Define outputs
+    assign got = state == S_GOT;
+    assign strob1 = (state == S_ST1) | strob_fp;
+    assign strob1b = (state == S_ST1B) | strobb_fp;
+    assign strob2 = state == S_ST2;
+    assign strob2b = state == S_ST2B;
+    assign ldstate = ~if_busy & ((state == S_PGOT) | ((state == S_ST1B) & no_strob2) | (state == S_ST2B));
+
+    // Define step signal
+    reg lstep;
+    always @ (posedge clk_sys) begin
+        lstep <= step;
+    end
+    wire step_trig = ~mode | (step & ~lstep);
+
+    // Define state machine
+    reg [0:2] state;
+    always @ (posedge clk_sys) begin
+        case (state)
+            // GOT
+            S_GOT: begin
+                if (es1) begin
+                    state <= S_ST1;
+                end else begin
+                    state <= S_GOTW;
+                end
+            end
+
+            S_GOTW: begin
+                if (es1) begin
+                    state <= S_ST1;
+                end
+            end
+
+            // STROB1 front
+            S_ST1: begin
+                if (step_trig) state <= S_ST1B;
+                else state <= S_ST1W;
+            end
+
+            // STROB1 front (wait for STEP)
+            S_ST1W: begin
+                if (step_trig) state <= S_ST1B;
+            end
+
+            // STROB1 back
+            S_ST1B: begin
+                if (has_strob2) begin
+                    state <= S_ST2;
+                end else if (no_strob2 & ~if_busy) begin
+                    state <= S_GOT;
+                end else begin
+                    state <= S_PGOT;
+                end
+            end
+
+            // STROB2 front
+            S_ST2: begin
+                state <= S_ST2B;
+            end
+
+            // STROB2 back
+            S_ST2B: begin
+                if (~if_busy) begin
+                    state <= S_GOT;
+                end else begin
+                    state <= S_PGOT;
+                end
+            end
+
+            // STROB2 back (wait for I/F operation to end)
+            S_PGOT: begin
+                if (~if_busy) begin
+                    state <= S_GOT;
+                end
+            end
+        endcase
+    end
+
+endmodule
+```
+

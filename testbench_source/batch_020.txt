@@ -1,0 +1,159 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module calculator(
+    input wire clk,
+    input wire reset,
+    input wire [7:0] A,
+    input wire [7:0] B,
+    input wire [2:0] op,
+    output reg [7:0] result
+);
+
+always @(posedge clk) begin
+    if(reset) begin
+        result <= 8'h00;
+    end
+    else begin
+        case(op)
+            //Addition
+            3'b000: begin
+                result <= A + B;
+            end
+            //Subtraction
+            3'b001: begin
+                result <= A - B;
+            end
+            //Multiplication
+            3'b010: begin
+                result <= A * B;
+            end
+            //Division
+            3'b011: begin
+                result <= A / B;
+            end
+            default: begin
+                result <= 8'h00;
+            end
+        endcase
+    end
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module d_ff_sync_reset_set_ce (
+    input CLK,
+    input D,
+    input RESET,
+    input SET,
+    input CE,
+    output reg Q
+);
+
+    always @(posedge CLK) begin
+        if (CE) begin
+            if (RESET) begin
+                Q <= 0;
+            end else if (SET) begin
+                Q <= 1;
+            end else begin
+                Q <= D;
+            end
+        end
+    end
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module mux_4to1_enable(input [7:0] in0, input [7:0] in1, input [7:0] in2, input [7:0] in3, input [1:0] sel, input en, output reg [7:0] out);
+
+always @ (sel or en or in0 or in1 or in2 or in3) begin
+	if (en == 1'b0) begin
+		out <= 8'b0;
+	end
+	else begin
+		case (sel)
+			2'b00: out <= in0;
+			2'b01: out <= in1;
+			2'b10: out <= in2;
+			2'b11: out <= in3;
+			default: out <= 8'b0;
+		endcase
+	end
+end
+
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module my_circuit (
+    Q    ,
+    CLK  ,
+    D    ,
+    SCD  ,
+    SCE  ,
+    SET_B,
+    VPWR ,
+    VGND ,
+    VPB  ,
+    VNB
+);
+
+    output Q    ;
+    input  CLK  ;
+    input  D    ;
+    input  SCD  ;
+    input  SCE  ;
+    input  SET_B;
+    input  VPWR ;
+    input  VGND ;
+    input  VPB  ;
+    input  VNB  ;
+
+    reg Q_reg;
+
+    always @(posedge CLK) begin
+        if (SET_B) begin
+            Q_reg <= 1;
+        end else if (SCD) begin
+            Q_reg <= D;
+        end else if (SCE) begin
+            Q_reg <= 0;
+        end
+    end
+
+    assign Q = Q_reg;
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module dff_async_reset (
+    input D,
+    input CLK,
+    input RESET,
+    output reg Q
+);
+
+always @(posedge CLK, posedge RESET) begin
+    if (RESET == 1'b1) begin
+        Q <= 1'b0;
+    end else begin
+        Q <= D;
+    end
+end
+
+endmodule
+```
+

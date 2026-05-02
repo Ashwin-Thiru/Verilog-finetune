@@ -1,0 +1,301 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module OneCycleStall(request, clk, resetn, stalled);
+input request;
+input clk;
+input resetn;
+output stalled;
+
+  reg [1:0] state;
+  reg [1:0] next_state;
+
+  // State machine for stalling 1 cycle
+  always@(state or request) begin
+    case(state)
+      2'b00: next_state = request ? 2'b01 : 2'b00;
+      2'b01: next_state = 2'b10;
+      2'b10: next_state = 2'b00;
+    endcase
+  end
+
+  always@(posedge clk) begin
+    if(!resetn) begin
+      state <= 2'b00;
+    end else begin
+      state <= next_state;
+    end
+  end
+
+  assign stalled = (state == 2'b01) ? 1'b1 : 1'b0;
+
+endmodule
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module ring_counter (
+  input clk,
+  output [n-1:0] out
+);
+
+parameter n = 4; // number of states in the ring counter
+
+reg [n-1:0] state; // register to hold the current state
+
+always @(posedge clk) begin
+  state <= state + 1; // increment the state on each clock cycle
+  if (state == n) begin
+    state <= 0; // reset the state to 0 when it reaches n
+  end
+end
+
+assign out = (state == {n{1'b1}}) ? {n{1'b1}} : (1 << state); // generate the output signals
+
+endmodule
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+module fsm_3bit_binary_counter (
+  input clk,
+  input reset,
+  output reg [2:0] count
+);
+
+  parameter A = 3'b000;
+  parameter B = 3'b001;
+  parameter C = 3'b010;
+
+  reg [1:0] state;
+  always @(posedge clk, negedge reset) begin
+    if (reset == 1'b0) begin
+      state <= A;
+      count <= A;
+    end else begin
+      case (state)
+        A: begin
+          state <= B;
+          count <= B;
+        end
+        B: begin
+          state <= C;
+          count <= C;
+        end
+        C: begin
+          state <= A;
+          count <= A;
+        end
+      endcase
+    end
+  end
+endmodule
+
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module Moore_Chart
+(
+  clk,
+  rst_n,
+  enb,
+  a,
+  b
+);
+
+input clk;
+input rst_n;
+input enb;
+output [63:0] a;
+output [63:0] b;
+
+parameter IN_FINAL = 3'd0, IN_IDLE = 3'd1, IN_INITIAL = 3'd2, IN_SEQ1 = 3'd3, IN_SEQ2 = 3'd4;
+
+reg [2:0] is_Moore_Chart;
+real a_1;
+real b_1;
+real a_reg;
+real b_reg;
+reg [2:0] is_Moore_Chart_next;
+real a_reg_next;
+real b_reg_next;
+
+always @(posedge clk or negedge rst_n) begin
+  if (!rst_n) begin
+    is_Moore_Chart <= IN_INITIAL;
+    a_reg <= 0.0;
+    b_reg <= 0.0;
+  end
+  else begin
+    if (enb) begin
+      is_Moore_Chart <= is_Moore_Chart_next;
+      a_reg <= a_reg_next;
+      b_reg <= b_reg_next;
+    end
+  end
+end
+
+always @* begin
+  is_Moore_Chart_next = is_Moore_Chart;
+  a_reg_next = a_reg;
+  b_reg_next = b_reg;
+
+  case (is_Moore_Chart)
+    IN_FINAL: begin
+      // No output
+    end
+    IN_IDLE: begin
+      a_reg_next = 0.0;
+      b_reg_next = b_reg;
+    end
+    IN_INITIAL: begin
+      a_reg_next = 0.0;
+      b_reg_next = 0.0;
+    end
+    IN_SEQ1: begin
+      a_reg_next = 1.0;
+      b_reg_next = b_reg + 1.0;
+    end
+    IN_SEQ2: begin
+      a_reg_next = 2.0;
+      b_reg_next = b_reg + 2.0;
+    end
+  endcase
+
+  case (is_Moore_Chart)
+    IN_FINAL: begin
+      is_Moore_Chart_next = IN_IDLE;
+    end
+    IN_IDLE: begin
+      is_Moore_Chart_next = IN_SEQ1;
+    end
+    IN_INITIAL: begin
+      is_Moore_Chart_next = IN_IDLE;
+    end
+    IN_SEQ1: begin
+      is_Moore_Chart_next = IN_SEQ2;
+    end
+    default: begin
+      is_Moore_Chart_next = IN_FINAL;
+    end
+  endcase
+end
+
+always @* begin
+  a_1 = a_reg_next;
+  b_1 = b_reg_next;
+end
+
+assign a = $realtobits(a_1);
+assign b = $realtobits(b_1);
+
+endmodule
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module traffic_light_controller(
+    input clk,
+    input reset,
+    input button,
+    output reg green,
+    output reg yellow,
+    output reg red,
+    output reg walk
+);
+
+// Define constants for the state durations
+localparam GREEN_TIME = 10_000_000; // 10 seconds
+localparam YELLOW_TIME = 2_000_000; // 2 seconds
+localparam RED_TIME = 10_000_000; // 10 seconds
+localparam WALK_TIME = 2_000_000; // 2 seconds
+
+// Define state variables
+reg [1:0] state = 2'b00;
+reg [23:0] state_counter = 0;
+reg [23:0] walk_counter = 0;
+
+// Define state machine
+always @(posedge clk) begin
+    if (reset) begin
+        state <= 2'b00;
+        state_counter <= 0;
+        walk_counter <= 0;
+        green <= 1'b1;
+        yellow <= 1'b0;
+        red <= 1'b0;
+        walk <= 1'b0;
+    end else begin
+        case (state)
+            2'b00: begin // Green state
+                green <= 1'b1;
+                yellow <= 1'b0;
+                red <= 1'b0;
+                walk <= 1'b0;
+                if (state_counter >= GREEN_TIME) begin
+                    state <= 2'b01;
+                    state_counter <= 0;
+                end
+            end
+            2'b01: begin // Yellow state
+                green <= 1'b0;
+                yellow <= 1'b1;
+                red <= 1'b0;
+                if (state_counter >= YELLOW_TIME) begin
+                    state <= 2'b10;
+                    state_counter <= 0;
+                    walk_counter <= 0;
+                end
+                if (state_counter >= YELLOW_TIME - WALK_TIME) begin
+                    walk <= 1'b1;
+                    walk_counter <= walk_counter + 1;
+                end
+            end
+            2'b10: begin // Red state
+                green <= 1'b0;
+                yellow <= 1'b0;
+                red <= 1'b1;
+                if (state_counter >= RED_TIME) begin
+                    state <= 2'b11;
+                    state_counter <= 0;
+                end
+                if (state_counter >= RED_TIME - WALK_TIME) begin
+                    walk <= 1'b1;
+                    walk_counter <= walk_counter + 1;
+                end
+            end
+            2'b11: begin // Yellow state
+                green <= 1'b0;
+                yellow <= 1'b1;
+                red <= 1'b0;
+                if (state_counter >= YELLOW_TIME) begin
+                    state <= 2'b00;
+                    state_counter <= 0;
+                    walk_counter <= 0;
+                end
+                if (state_counter >= WALK_TIME) begin
+                    walk <= 1'b0;
+                end
+            end
+        endcase
+        state_counter <= state_counter + 1;
+    end
+end
+
+// Handle pedestrian button
+always @(posedge clk) begin
+    if (button) begin
+        state <= 2'b01; // Immediately switch to yellow state
+        state_counter <= 0;
+        walk_counter <= 0;
+    end
+end
+
+endmodule
+```
+

@@ -1,0 +1,133 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module zeroer(d, en, q);
+
+input en;
+input [4:0] d;
+output [31:0] q;
+
+wire [31:5] upper_bits;
+assign upper_bits = 0;
+
+genvar i;
+generate
+    for (i = 5; i < 32; i = i + 1) begin : zeroer_loop
+        assign upper_bits[i] = 0;
+    end
+endgenerate
+
+assign q = {d, upper_bits} & en;
+
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module top_module( 
+    input [31:0] in,
+    output [31:0] out );
+
+    wire [15:0] split_out1, split_out2;
+    wire [15:0] swap_out1, swap_out2;
+
+    split_module split(in, split_out1, split_out2);
+    swap_module swap(split_out1, split_out2, swap_out1, swap_out2);
+    functional_module func(swap_out1, swap_out2, out);
+
+endmodule
+
+module split_module(
+    input [31:0] in,
+    output [15:0] out1,
+    output [15:0] out2
+);
+    assign out1 = in[31:16];
+    assign out2 = in[15:0];
+endmodule
+
+module swap_module(
+    input [15:0] in1,
+    input [15:0] in2,
+    output [15:0] out1,
+    output [15:0] out2
+);
+    assign out1 = in2;
+    assign out2 = in1;
+endmodule
+
+module functional_module(
+    input [15:0] in1,
+    input [15:0] in2,
+    output [31:0] out
+);
+    assign out = {in1, in2};
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module BCD_to_Binary (
+  input [3:0] bcd,
+  output [3:0] bin
+);
+
+  // Define conversion function
+  function [3:0] bcd_to_bin;
+    input [3:0] bcd_input;
+    begin
+      case (bcd_input)
+        4'b0000: bcd_to_bin = 4'b0000;
+        4'b0001: bcd_to_bin = 4'b0001;
+        4'b0010: bcd_to_bin = 4'b0010;
+        4'b0011: bcd_to_bin = 4'b0011;
+        4'b0100: bcd_to_bin = 4'b0100;
+        4'b0101: bcd_to_bin = 4'b0101;
+        4'b0110: bcd_to_bin = 4'b0110;
+        4'b0111: bcd_to_bin = 4'b0111;
+        4'b1000: bcd_to_bin = 4'b1000;
+        4'b1001: bcd_to_bin = 4'b1001;
+        default: bcd_to_bin = 4'bxxxx;
+      endcase
+    end
+  endfunction
+
+  // Connect BCD input to binary output using conversion function
+  assign bin = bcd_to_bin(bcd);
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module addsub(
+    input [3:0] A,
+    input [3:0] B,
+    input sel,
+    output [3:0] sum,
+    output cout
+    );
+
+    wire [3:0] B_comp;
+
+    assign B_comp = ~B + 1;
+
+    assign sum = (sel == 1) ? A + B_comp : A + B;
+    assign cout = (sel == 1) ? (A < B) : (sum < A);
+
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module swap_bits ( input [1:0] A, output [1:0] Q );
+
+    assign Q = { A[0], A[1] };
+
+endmodule
+```
+

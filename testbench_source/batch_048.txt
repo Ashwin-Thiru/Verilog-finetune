@@ -1,0 +1,265 @@
+MODULE 1:
+Topic: memory
+```verilog
+module PushButton_Debouncer(
+    input clk,
+    input PB,  // "PB" is the glitchy, asynchronous to clk, active low push-button signal
+
+    // from which we make three outputs, all synchronous to the clock
+    output reg PB_state,  // 1 as long as the push-button is active (down)
+    output PB_down,  // 1 for one clock cycle when the push-button goes down (i.e. just pushed)
+    output PB_up   // 1 for one clock cycle when the push-button goes up (i.e. just released)
+);
+
+// First use two flip-flops to synchronize the PB signal the "clk" clock domain
+reg PB_sync_0;  always @(posedge clk) PB_sync_0 <= ~PB;  // invert PB to make PB_sync_0 active high
+reg PB_sync_1;  always @(posedge clk) PB_sync_1 <= PB_sync_0;
+
+// Next declare a 16-bits counter
+reg [15:0] PB_cnt;
+
+// When the push-button is pushed or released, we increment the counter
+// The counter has to be maxed out before we decide that the push-button state has changed
+
+wire PB_idle = (PB_state==PB_sync_1);
+wire PB_cnt_max = &PB_cnt;	// true when all bits of PB_cnt are 1's
+
+always @(posedge clk)
+if(PB_idle)
+    PB_cnt <= 0;  // nothing's going on
+else
+begin
+    PB_cnt <= PB_cnt + 16'd1;  // something's going on, increment the counter
+    if(PB_cnt_max) PB_state <= ~PB_state;  // if the counter is maxed out, PB changed!
+end
+
+assign PB_down = ~PB_idle & PB_cnt_max & ~PB_state;
+assign PB_up   = ~PB_idle & PB_cnt_max &  PB_state;
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module fifo (
+  input clock,
+  input reset,
+  input enable,
+  input enq,
+  input [width-1:0] enq_data,
+  input deq,
+  input [preload_data_width-1:0] preload,
+  output [width-1:0] deq_data,
+  output full,
+  output empty
+);
+
+  parameter depth = 2;
+  parameter width = 1;
+  parameter preload_count = 0;
+  parameter enq_latency = 0;
+  parameter deq_latency = 0;
+  parameter value_check = 1;
+  parameter pass_thru = 0;
+  parameter registered = 0;
+
+  parameter preload_data_width = (preload_count == 0) ? width : (preload_count*width);
+
+  // Internal signals
+  reg [width-1:0] fifo [depth-1:0];
+  reg [width-1:0] preload_fifo [preload_count-1:0];
+  reg [depth-1:0] full_count;
+  reg [depth-1:0] empty_count;
+  reg enq_req;
+  reg deq_req;
+  reg [width-1:0] deq_data_reg;
+  reg [depth-1:0] full_count_reg;
+  reg [depth-1:0] empty_count_reg;
+
+  // Assign internal signals
+  assign full = (full_count == depth);
+  assign empty = (empty_count == depth);
+
+  // Preload data
+  integer i;
+  always @(posedge reset) begin
+    if (preload_count > 0) begin
+      for (i = 0; i < preload_count; i = i + 1) begin
+        preload_fifo[i] <= preload[i*width +: width];
+      end
+    end
+  end
+
+  // Enqueue operation
+  always @(posedge clock) begin
+    if (reset) begin
+      full_count_reg <= 0;
+      empty_count_reg <= depth;
+      deq_data_reg <= 0;
+      if (preload_count > 0) begin
+        for (i = 0; i < preload_count; i = i + 1) begin
+          fifo[i] <= preload_fifo[i];
+        end
+        full_count_reg <= preload_count;
+        empty_count_reg <= depth - preload_count;
+      end
+    end
+    else if (enable) begin
+      if (enq && !full) begin
+        enq_req <= 1;
+        full_count_reg <= full_count + 1;
+        empty_count_reg <= empty_count;
+        fifo[full_count] <= enq_data;
+      end
+      else begin
+        enq_req <= 0;
+        full_count_reg <= full_count;
+        empty_count_reg <= empty_count;
+      end
+      if (pass_thru && empty) begin
+        enq_req <= enq;
+      end
+    end
+  end
+
+  // Dequeue operation
+  always @(posedge clock) begin
+    if (reset) begin
+      deq_data_reg <= 0;
+    end
+    else if (enable) begin
+      if (deq && !empty) begin
+        deq_req <= 1;
+        full_count_reg <= full_count;
+        empty_count_reg <= empty_count - 1;
+        deq_data_reg <= fifo[empty_count];
+      end
+      else begin
+        deq_req <= 0;
+        full_count_reg <= full_count;
+        empty_count_reg <= empty_count;
+      end
+    end
+  end
+
+  // Register signals if necessary
+  always @(posedge clock) begin
+    if (registered) begin
+      deq_req <= deq_req;
+      enq_req <= enq_req;
+      deq_data_reg <= deq_data_reg;
+      full_count <= full_count_reg;
+      empty_count <= empty_count_reg;
+    end
+    else begin
+      deq_req <= deq;
+      enq_req <= enq;
+      deq_data_reg <= deq_data_reg;
+      full_count <= full_count_reg;
+      empty_count <= empty_count_reg;
+    end
+  end
+
+  // Check for value mismatch
+  always @(posedge clock) begin
+    if (reset) begin
+      deq_data_reg <= 0;
+    end
+    else if (enable && deq_req && enq_req && value_check && (deq_data_reg != enq_data)) begin
+      $error("Value mismatch in FIFO");
+    end
+  end
+
+  // Assign output signals
+  assign deq_data = deq_data_reg;
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module counter (
+  input clk,
+  input rst,
+  input up_down,
+  output reg [7:0] count
+);
+
+  always @(posedge clk) begin
+    if (rst) begin
+      count <= 8'd0;
+    end else if (up_down) begin
+      if (count == 8'd255) begin
+        count <= 8'd0;
+      end else begin
+        count <= count + 1;
+      end
+    end else begin
+      if (count == 8'd0) begin
+        count <= 8'd255;
+      end else begin
+        count <= count - 1;
+      end
+    end
+  end
+
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module data_register (
+    input wire reset,
+    input wire wenb,
+    input wire [7:0] in_data,
+    input wire clk,
+    output reg [7:0] out_data
+);
+
+    always @(posedge clk or negedge reset) begin
+        if (~reset) begin
+            out_data <= 8'h00;
+        end else begin
+            if (wenb) begin
+                out_data <= in_data;
+            end
+        end
+    end
+
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module memory_arbiter (
+  input [n-1:0] req,
+  output [n-1:0] gnt
+);
+
+parameter n = 4; // number of devices
+
+reg [n-1:0] grant_queue;
+reg [n-1:0] round_robin_counter;
+
+always @(*) begin
+  // If there are no requests, do not grant access to any device
+  if (req == 0) begin
+    grant_queue = 0;
+  end
+  else begin
+    // Round-robin algorithm to grant access to requesting devices in a fair manner
+    grant_queue[round_robin_counter] = req[round_robin_counter];
+    round_robin_counter = round_robin_counter + 1;
+    if (round_robin_counter == n) begin
+      round_robin_counter = 0;
+    end
+  end
+end
+
+assign gnt = grant_queue & req;
+
+endmodule
+```
+

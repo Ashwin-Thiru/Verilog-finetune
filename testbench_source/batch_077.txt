@@ -1,0 +1,181 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module multiplier_block (
+    i_data0,
+    o_data0
+);
+
+  // Port mode declarations:
+  input   [31:0] i_data0;
+  output  [31:0]
+    o_data0;
+
+  //Multipliers:
+  wire [31:0]
+    w1,
+    w16,
+    w17,
+    w4,
+    w13,
+    w6656,
+    w6643,
+    w16384,
+    w23027;
+
+  assign w1 = i_data0;
+  assign w4 = w1 << 2; // missing multiplier
+  assign w16 = w1 << 4;
+  assign w16384 = w1 << 14;
+  assign w17 = w1 + w16;
+  assign w13 = w17 - w4; // missing multiplier
+  assign w6656 = w13 << 9;
+  assign w6643 = w6656 - w13;
+  assign w23027 = w6643 + w16384;
+  
+  assign o_data0 = w23027;
+
+  //multiplier_block area estimate = 5791.26237074559;
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module arithmetic_op(g, p, c_in, g_out, p_out, c_out);
+  input [1:0] g, p;
+  input c_in;
+  output [1:0] g_out, p_out;
+  output c_out;
+  assign g_out = {{1'b0}, g[1]} | {{1'b0}, {1'b0}} & {g[0], p[1]};
+  assign p_out = {p[1], p[0]} & {1'b1, 1'b1};
+  assign c_out = {g[0], p[0]} & {c_in, 1'b1} | {{1'b0}, g[1]} & {{1'b0}, {1'b0}} & {c_in, p[1]};
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module reverse4 (
+    in,
+    out
+);
+
+    input [3:0] in;
+    output [3:0] out;
+
+    wire a, b, c, d;
+
+    // Reverse the bits
+    assign a = in[0] & ~in[1] & ~in[2] & ~in[3];
+    assign b = ~in[0] & in[1] & ~in[2] & ~in[3];
+    assign c = ~in[0] & ~in[1] & in[2] & ~in[3];
+    assign d = ~in[0] & ~in[1] & ~in[2] & in[3];
+
+    // Output the reversed bits
+    assign out = {d, c, b, a};
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module four_bit_adder(
+    input [3:0] A,
+    input [3:0] B,
+    output [4:0] S
+);
+
+    wire [3:0] sum;
+    wire carry_out;
+
+    assign sum = A + B;
+    assign carry_out = (sum[4] == 1) ? 1'b1 : 1'b0;
+    assign S = {carry_out, sum};
+
+endmodule
+
+module four_bit_adder_test;
+
+    reg [3:0] A;
+    reg [3:0] B;
+    wire [4:0] S;
+
+    four_bit_adder dut(
+        .A(A),
+        .B(B),
+        .S(S)
+    );
+
+    initial begin
+        $display("Testing four_bit_adder module...");
+
+        // Test case 1: A = 0000, B = 0000
+        A = 4'b0000;
+        B = 4'b0000;
+        #10;
+        if (S !== 5'b00000) $display("Test case 1 failed");
+
+        // Test case 2: A = 1111, B = 0000
+        A = 4'b1111;
+        B = 4'b0000;
+        #10;
+        if (S !== 5'b11110) $display("Test case 2 failed");
+
+        // Test case 3: A = 0000, B = 1111
+        A = 4'b0000;
+        B = 4'b1111;
+        #10;
+        if (S !== 5'b11110) $display("Test case 3 failed");
+
+        // Test case 4: A = 1010, B = 0101
+        A = 4'b1010;
+        B = 4'b0101;
+        #10;
+        if (S !== 5'b11111) $display("Test case 4 failed");
+
+        // Test case 5: A = 1100, B = 1100
+        A = 4'b1100;
+        B = 4'b1100;
+        #10;
+        if (S !== 5'b11001) $display("Test case 5 failed");
+
+        $display("four_bit_adder module test complete.");
+        $finish;
+    end
+
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module decoder (
+    input [3:0] A,
+    output [15:0] Y
+);
+
+wire [15:0] not_A;
+assign not_A = ~A;
+
+assign Y[0] = not_A[3] & not_A[2] & not_A[1] & not_A[0];
+assign Y[1] = not_A[3] & not_A[2] & not_A[1] & A[0];
+assign Y[2] = not_A[3] & not_A[2] & A[1] & not_A[0];
+assign Y[3] = not_A[3] & not_A[2] & A[1] & A[0];
+assign Y[4] = not_A[3] & A[2] & not_A[1] & not_A[0];
+assign Y[5] = not_A[3] & A[2] & not_A[1] & A[0];
+assign Y[6] = not_A[3] & A[2] & A[1] & not_A[0];
+assign Y[7] = not_A[3] & A[2] & A[1] & A[0];
+assign Y[8] = A[3] & not_A[2] & not_A[1] & not_A[0];
+assign Y[9] = A[3] & not_A[2] & not_A[1] & A[0];
+assign Y[10] = A[3] & not_A[2] & A[1] & not_A[0];
+assign Y[11] = A[3] & not_A[2] & A[1] & A[0];
+assign Y[12] = A[3] & A[2] & not_A[1] & not_A[0];
+assign Y[13] = A[3] & A[2] & not_A[1] & A[0];
+assign Y[14] = A[3] & A[2] & A[1] & not_A[0];
+assign Y[15] = A[3] & A[2] & A[1] & A[0];
+
+endmodule
+```
+

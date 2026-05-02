@@ -1,0 +1,201 @@
+MODULE 1:
+Topic: memory
+```verilog
+module watchdog_timer (
+  input clk,
+  input reset,
+  input [31:0] timer_duration,
+  output reg timer_reset
+);
+
+reg [31:0] timer_count;
+
+always @(posedge clk or posedge reset) begin
+  if (reset) begin
+    timer_count <= 0;
+    timer_reset <= 0;
+  end else begin
+    timer_count <= timer_count + 1;
+    if (timer_count >= timer_duration) begin
+      timer_count <= 0;
+      timer_reset <= 1;
+    end else begin
+      timer_reset <= 0;
+    end
+  end
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module up_down_counter (
+  input clk,
+  input reset,
+  input direction,
+  output reg [3:0] count
+);
+
+always @(posedge clk) begin
+  if (reset) begin
+    count <= 4'b0000;
+  end else if (direction) begin
+    if (count == 4'b1111) begin
+      count <= 4'b0000;
+    end else begin
+      count <= count + 1;
+    end
+  end else begin
+    if (count == 4'b0000) begin
+      count <= 4'b1111;
+    end else begin
+      count <= count - 1;
+    end
+  end
+end
+
+endmodule
+
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module binary_to_gray_mux (
+    input wire [3:0] binary_input,
+    input wire [1:0] select,
+    output wire [3:0] gray_output,
+    output wire o1,
+    output wire o0,
+    output wire [1:0] outv
+);
+
+    wire [3:0] gray1;
+    wire [3:0] gray2;
+
+    assign gray1[0] = binary_input[0] ^ binary_input[1];
+    assign gray1[1] = binary_input[1] ^ binary_input[2];
+    assign gray1[2] = binary_input[2] ^ binary_input[3];
+    assign gray1[3] = binary_input[3];
+
+    assign gray2[0] = binary_input[0] ^ binary_input[1];
+    assign gray2[1] = binary_input[1] ^ binary_input[2];
+    assign gray2[2] = binary_input[2] ^ binary_input[3];
+    assign gray2[3] = binary_input[3] ^ select[1];
+
+    assign gray_output = (select[0] == 0) ? gray1 : gray2;
+    assign o1 = gray_output[2];
+    assign o0 = gray_output[1];
+    assign outv = {select[1], select[0]};
+
+endmodule
+
+module top_module (
+    input wire [3:0] binary_input,
+    input wire [1:0] select,
+    output wire [5:0] final_output,
+    output wire [1:0] outv,
+    output wire o1,
+    output wire o0,
+    output wire [3:0] gray_output
+);
+
+    wire [3:0] gray_mux_output;
+
+    binary_to_gray_mux gray_mux (
+        .binary_input(binary_input),
+        .select(select),
+        .gray_output(gray_mux_output),
+        .o1(o1),
+        .o0(o0),
+        .outv(outv)
+    );
+
+    assign final_output = {gray_mux_output, select};
+
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module binary_counter(
+    input clk, reset, enable, load,
+    input [3:0] in,
+    output [3:0] out,
+    output overflow
+);
+
+reg [3:0] counter;
+reg [3:0] next_val;
+
+assign overflow = (counter == 4'b1111);
+
+always @(posedge clk) begin
+    if (reset) begin
+        counter <= 4'b0000;
+    end else if (load) begin
+        next_val <= in;
+    end else if (enable) begin
+        next_val <= counter + 4'b0001;
+    end
+end
+
+always @(posedge clk) begin
+    if (reset) begin
+        counter <= 4'b0000;
+    end else if (load || enable) begin
+        counter <= next_val;
+    end
+end
+
+assign out = counter;
+
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module Contador_AD_Year(
+    input rst,
+    input [7:0]estado,
+    input [1:0] en,
+    input [7:0] Cambio,
+    input got_data,
+    input clk,
+    output reg [(N-1):0] Cuenta
+);
+
+    parameter N = 5;
+    parameter X = 31;
+
+    always @(posedge clk) begin
+        if (rst) begin
+            Cuenta <= 1;
+        end else if (en == 2'b00 && estado == 8'h7D) begin
+            if (Cambio == 8'h73 && got_data) begin
+                if (Cuenta == X) begin
+                    Cuenta <= 1;
+                end else begin
+                    Cuenta <= Cuenta + 1'b1;
+                end
+            end else if (Cambio == 8'h72 && got_data) begin
+                if (Cuenta == 1) begin
+                    Cuenta <= X;
+                end else begin
+                    Cuenta <= Cuenta - 1'b1;
+                end
+            end else begin
+                Cuenta <= Cuenta;
+            end
+        end else begin
+            Cuenta <= Cuenta;
+        end
+    end
+
+endmodule
+```
+

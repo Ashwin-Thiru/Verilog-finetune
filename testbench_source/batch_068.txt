@@ -1,0 +1,202 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module full_adder(
+    input a,
+    input b,
+    input carry_in,
+    output sum,
+    output carry_out
+);
+
+    assign sum = a ^ b ^ carry_in;
+    assign carry_out = (a & b) | (a & carry_in) | (b & carry_in);
+
+endmodule
+
+module adder_4bit(
+    input [3:0] A,
+    input [3:0] B,
+    output [4:0] C
+);
+
+    wire [3:0] sum;
+    wire [4:0] carry;
+
+    full_adder fa0(
+        .a(A[0]),
+        .b(B[0]),
+        .carry_in(1'b0),
+        .sum(sum[0]),
+        .carry_out(carry[1])
+    );
+
+    full_adder fa1(
+        .a(A[1]),
+        .b(B[1]),
+        .carry_in(carry[1]),
+        .sum(sum[1]),
+        .carry_out(carry[2])
+    );
+
+    full_adder fa2(
+        .a(A[2]),
+        .b(B[2]),
+        .carry_in(carry[2]),
+        .sum(sum[2]),
+        .carry_out(carry[3])
+    );
+
+    full_adder fa3(
+        .a(A[3]),
+        .b(B[3]),
+        .carry_in(carry[3]),
+        .sum(sum[3]),
+        .carry_out(carry[4])
+    );
+
+    assign C = {carry[4], sum};
+
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module my_circuit (
+    Y ,
+    A1,
+    A2,
+    B1,
+    C1
+);
+
+    output Y ;
+    input  A1;
+    input  A2;
+    input  B1;
+    input  C1;
+
+    // Voltage supply signals
+    supply1 VPWR;
+    supply0 VGND;
+    supply1 VPB ;
+    supply0 VNB ;
+
+    assign Y = (A1 & A2) & (B1 | C1);
+
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module top_module( 
+    input wire [15:0] in,
+    output wire [7:0] out_hi,
+    output wire [7:0] out_lo );
+
+    wire [7:0] lo_adder_out;
+    wire [7:0] hi_adder_out;
+
+    ripple_adder adder_lo(.a(in[7:0]), .b(in[15:8]), .c(1'b0), .s(lo_adder_out));
+    carry_select_adder adder_hi(.a(in[15:8]), .b(in[7:0]), .c(1'b0), .s(hi_adder_out));
+
+    assign out_lo = lo_adder_out;
+    assign out_hi = hi_adder_out;
+
+endmodule
+
+module ripple_adder(
+    input wire [7:0] a,
+    input wire [7:0] b,
+    input wire c,
+    output wire [7:0] s
+);
+
+    wire [7:0] sum;
+    wire [7:0] carry;
+
+    assign sum = a + b + c;
+    assign s = sum;
+
+endmodule
+
+module carry_select_adder(
+    input wire [7:0] a,
+    input wire [7:0] b,
+    input wire c,
+    output wire [7:0] s
+);
+
+    wire [7:0] sum;
+    wire [7:0] carry;
+
+    assign {carry, sum} = a + b + c;
+    assign s = (carry == 1'b0) ? sum : (a + b + 1'b1);
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module multiplier_block (
+    i_data0,
+    o_data0
+);
+
+  // Port mode declarations:
+  input   [31:0] i_data0;
+  output  [31:0] o_data0;
+
+  //Multipliers:
+  wire [31:0] w1;
+  wire [31:0] w128;
+  wire [31:0] w129;
+  wire [31:0] w4096;
+  wire [31:0] w4225;
+  wire [31:0] w1032;
+  wire [31:0] w3193;
+  wire [31:0] w32;
+  wire [31:0] w3161;
+
+  assign w1 = i_data0;
+  assign w128 = i_data0 << 7;
+  assign w129 = i_data0 + w128;
+  assign w4096 = i_data0 << 12;
+  assign w4225 = i_data0 + w128 + w4096;
+  assign w1032 = w129 << 3;
+  assign w3193 = w4225 >>> 3;
+  assign w32 = i_data0 << 5;
+  assign w3161 = w3193 - w32;
+
+  assign o_data0 = w3161;
+
+  //multiplier_block area estimate = 7268.18394666324;
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module twos_complement(
+    input [3:0] in,
+    output [3:0] out
+);
+
+wire [3:0] inv;
+wire [3:0] add_one;
+
+// invert all bits of input
+assign inv = ~in;
+
+// add 1 to inverted input
+assign add_one = inv + 4'b0001;
+
+// assign result to output
+assign out = add_one;
+
+endmodule
+```
+

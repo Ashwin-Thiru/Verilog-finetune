@@ -1,0 +1,435 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module rx_control_data_rdy(
+    input posedge_clk,
+    input rx_resetn,
+
+    input rx_error_c,
+    input rx_error_d,
+
+    input [2:0] control,
+    input [2:0] control_l_r,
+
+    input is_control,
+    input [5:0] counter_neg,
+    input last_is_control,
+
+    output reg rx_error,
+    output reg ready_control_p_r,
+    output reg ready_data_p_r,
+    output reg rx_got_fct_fsm
+);
+
+reg [5:0] counter;
+reg last_is_control_reg;
+
+always@(posedge posedge_clk or negedge rx_resetn)
+begin
+    if(!rx_resetn)
+    begin
+        rx_got_fct_fsm  <=  1'b0;
+        ready_control_p_r <= 1'b0;
+        ready_data_p_r  <=  1'b0;
+        rx_error <= 1'b0;
+        counter <= 6'd0;
+        last_is_control_reg <= 1'b0;
+    end
+    else
+    begin
+        rx_error <= rx_error_c | rx_error_d;
+
+        if(counter == 6'd4 && is_control)
+        begin
+            ready_control_p_r <= 1'b1;
+            ready_data_p_r <= 1'b0;
+        end
+        else if(counter == 6'd32)
+        begin
+            ready_control_p_r <= 1'b0;
+            ready_data_p_r <= 1'b1;
+        end
+        else
+        begin
+            ready_control_p_r <= 1'b0;
+            ready_data_p_r <= 1'b0;
+        end
+
+        if((control_l_r[2:0] != 3'd7 && control[2:0] == 3'd4 && last_is_control_reg == 1'b1 ) == 1'b1)
+            rx_got_fct_fsm <= 1'b1;
+        else
+            rx_got_fct_fsm <= rx_got_fct_fsm;
+
+        if(counter == 6'd63)
+        begin
+            counter <= 6'd0;
+            last_is_control_reg <= is_control;
+        end
+        else
+        begin
+            counter <= counter + 1;
+            last_is_control_reg <= last_is_control;
+        end
+    end
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module sd_controller (
+  input clk,
+  input rst,
+  input [47:0] cmd,
+  input [511:0] dat_i,
+  input dat_o_en,
+  input dat_o_rd,
+  output [511:0] dat_o,
+  output cmd_busy
+);
+
+  // Define states
+  parameter IDLE_STATE = 2'b00;
+  parameter SEND_IF_COND_STATE = 2'b01;
+  parameter READ_SINGLE_BLOCK_STATE = 2'b10;
+  parameter WRITE_SINGLE_BLOCK_STATE = 2'b11;
+  
+  // Define command codes
+  parameter CMD0 = 6'b000000;
+  parameter CMD8 = 6'b000010;
+  parameter CMD17 = 6'b010001;
+  parameter CMD24 = 6'b011000;
+  
+  // Define internal signals
+  reg [1:0] state;
+  reg [47:0] cmd_reg;
+  reg [511:0] dat_o_reg;
+  reg cmd_busy_reg;
+  reg dat_o_en_reg;
+  reg dat_o_rd_reg;
+  reg [7:0] crc_reg;
+  
+  // Define constants
+  parameter CMD_RESP_TIMEOUT = 100;
+  parameter DATA_RESP_TIMEOUT = 100;
+  
+  // Define state machine
+  always @(posedge clk) begin
+    if (rst) begin
+      state <= IDLE_STATE;
+      cmd_reg <= 0;
+      dat_o_reg <= 0;
+      cmd_busy_reg <= 0;
+      dat_o_en_reg <= 0;
+      dat_o_rd_reg <= 0;
+      crc_reg <= 0;
+    end else begin
+      case (state)
+        IDLE_STATE: begin
+          if (cmd != CMD0) begin
+            state <= SEND_IF_COND_STATE;
+          end
+        end
+        SEND_IF_COND_STATE: begin
+          if (cmd == CMD8) begin
+            state <= READ_SINGLE_BLOCK_STATE;
+          end
+        end
+        READ_SINGLE_BLOCK_STATE: begin
+          if (cmd == CMD24) begin
+            state <= WRITE_SINGLE_BLOCK_STATE;
+          end
+        end
+        WRITE_SINGLE_BLOCK_STATE: begin
+          state <= IDLE_STATE;
+        end
+      endcase
+    end
+  end
+  
+  // Define command response logic
+  always @(posedge clk) begin
+    if (rst) begin
+      cmd_busy_reg <= 0;
+    end else begin
+      case (state)
+        IDLE_STATE: begin
+          cmd_busy_reg <= 0;
+        end
+        SEND_IF_COND_STATE: begin
+          cmd_busy_reg <= 1;
+          // Wait for response
+          #CMD_RESP_TIMEOUT;
+          cmd_busy_reg <= 0;
+        end
+        READ_SINGLE_BLOCK_STATE: begin
+          cmd_busy_reg <= 1;
+          // Wait for response
+          #CMD_RESP_TIMEOUT;
+          cmd_busy_reg <= 0;
+        end
+        WRITE_SINGLE_BLOCK_STATE: begin
+          cmd_busy_reg <= 1;
+          // Wait for response
+          #CMD_RESP_TIMEOUT;
+          cmd_busy_reg <= 0;
+        end
+      endcase
+    end
+  end
+  
+  // Define data response logic
+  always @(posedge clk) begin
+    if (rst) begin
+      dat_o_en_reg <= 0;
+      dat_o_rd_reg <= 0;
+    end else begin
+      case (state)
+        IDLE_STATE: begin
+          dat_o_en_reg <= 0;
+          dat_o_rd_reg <= 0;
+        end
+        SEND_IF_COND_STATE: begin
+          dat_o_en_reg <= 0;
+          dat_o_rd_reg <= 0;
+        end
+        READ_SINGLE_BLOCK_STATE: begin
+          dat_o_en_reg <= 1;
+          dat_o_rd_reg <= 1;
+          // Wait for response
+          #DATA_RESP_TIMEOUT;
+          dat_o_en_reg <= 0;
+          dat_o_rd_reg <= 0;
+        end
+        WRITE_SINGLE_BLOCK_STATE: begin
+          dat_o_en_reg <= 1;
+          dat_o_rd_reg <= 0;
+          // Wait for response
+          #DATA_RESP_TIMEOUT;
+          dat_o_en_reg <= 0;
+          dat_o_rd_reg <= 0;
+        end
+      endcase
+    end
+  end
+  
+  // Define output logic
+  assign dat_o = dat_o_reg;
+  assign cmd_busy = cmd_busy_reg;
+  
+  // Define command and data register logic
+  always @(posedge clk) begin
+    if (rst) begin
+      cmd_reg <= 0;
+      dat_o_reg <= 0;
+      crc_reg <= 0;
+    end else begin
+      if (cmd_busy_reg) begin
+        // Handle command response
+        case (state)
+          SEND_IF_COND_STATE: begin
+            // Send response
+            cmd_reg <= {8'h01, 8'haa, 8'h87, 8'h00, 8'h00, 8'h01, 8'h00, 8'h7f};
+          end
+          READ_SINGLE_BLOCK_STATE: begin
+            // Read data
+            dat_o_reg <= dat_i;
+          end
+          WRITE_SINGLE_BLOCK_STATE: begin
+            // Write data
+            dat_o_reg <= dat_i;
+          end
+        endcase
+      end else begin
+        // Handle command and data transfer
+        case (state)
+          IDLE_STATE: begin
+            cmd_reg <= cmd;
+          end
+          SEND_IF_COND_STATE: begin
+            cmd_reg <= {CMD8, 8'h00, 8'h00, 8'h01, 8'haa, 8'h87};
+          end
+          READ_SINGLE_BLOCK_STATE: begin
+            cmd_reg <= {CMD17, cmd[31:0], 8'h00, 8'h00, 8'h00, 8'h00, 8'h01, 8'h00};
+          end
+          WRITE_SINGLE_BLOCK_STATE: begin
+            cmd_reg <= {CMD24, cmd[31:0], 8'h00, 8'h00, 8'h00, 8'h00, 8'h01, 8'h00};
+            dat_o_reg <= dat_i;
+          end
+        endcase
+      end
+    end
+  end
+  
+endmodule
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+module state_machine(clk, rst, data_in, data_out);
+    input clk, rst;
+    input [31:0] data_in;
+    output reg [31:0] data_out;
+    
+    parameter IDLE = 2'b00, LOAD = 2'b01, SHIFT = 2'b10;
+    reg [1:0] state, next_state;
+    
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            state <= IDLE;
+            data_out <= 0;
+        end
+        else begin
+            state <= next_state;
+            case(state)
+                IDLE: begin
+                    data_out <= 0;
+                    if (data_in != 0) begin
+                        next_state = LOAD;
+                    end
+                end
+                LOAD: begin
+                    data_out <= data_in;
+                    next_state = SHIFT;
+                end
+                SHIFT: begin
+                    data_out <= data_in << 1;
+                    if (data_in == 0) begin
+                        next_state = IDLE;
+                    end
+                    else begin
+                        next_state = SHIFT;
+                    end
+                end
+                default: begin
+                    data_out <= 0;
+                    next_state = IDLE;
+                end
+            endcase
+        end
+    end
+endmodule
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module csrbrg(
+	input sys_clk,
+	input sys_rst,
+	
+	/* WB */
+	input [31:0] wb_adr_i,
+	input [31:0] wb_dat_i,
+	output reg [31:0] wb_dat_o,
+	input wb_cyc_i,
+	input wb_stb_i,
+	input wb_we_i,
+	output reg wb_ack_o,
+	
+	/* CSR */
+	output reg [13:0] csr_a,
+	output reg csr_we,
+	output reg [31:0] csr_do,
+	input [31:0] csr_di
+);
+
+/* Datapath: WB <- CSR */
+always @(posedge sys_clk) begin
+	wb_dat_o <= csr_di;
+end
+
+/* Datapath: CSR <- WB */
+reg next_csr_we;
+always @(posedge sys_clk) begin
+	csr_a <= wb_adr_i[15:2];
+	csr_we <= next_csr_we;
+	csr_do <= wb_dat_i;
+end
+
+/* Controller */
+
+reg [1:0] state;
+reg [1:0] next_state;
+
+parameter IDLE		= 2'd0;
+parameter DELAYACK1	= 2'd1;
+parameter DELAYACK2	= 2'd2;
+parameter ACK		= 2'd3;
+
+always @(posedge sys_clk) begin
+	if(sys_rst)
+		state <= IDLE;
+	else
+		state <= next_state;
+end
+
+always @(*) begin
+	next_state = state;
+	
+	wb_ack_o = 1'b0;
+	next_csr_we = 1'b0;
+	
+	case(state)
+		IDLE: begin
+			if(wb_cyc_i & wb_stb_i) begin
+				/* We have a request for us */
+				next_csr_we = wb_we_i;
+				if(wb_we_i)
+					next_state = ACK;
+				else
+					next_state = DELAYACK1;
+			end
+		end
+		DELAYACK1: next_state = DELAYACK2;
+		DELAYACK2: next_state = ACK;
+		ACK: begin
+			wb_ack_o = 1'b1;
+			next_state = IDLE;
+		end
+	endcase
+end
+
+endmodule
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+
+module RefModule (
+  input clk,
+  input reset,
+  input x,
+  output reg z
+);
+
+  parameter A=0, B=1, C=2, D=3, E=4;
+  reg [2:0] state, next;
+
+  always @(posedge clk) begin
+    if (reset) state <= A;
+    else state <= next;
+  end
+
+  always_comb begin
+    case (state)
+      A: next = x ? B : A;
+      B: next = x ? E : B;
+      C: next = x ? B : C;
+      D: next = x ? C : B;
+      E: next = x ? E : D;
+      default: next = 'x;
+    endcase
+  end
+
+  assign z = (state == D) || (state == E);
+
+endmodule
+
+
+```
+

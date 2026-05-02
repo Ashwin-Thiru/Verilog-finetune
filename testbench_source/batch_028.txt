@@ -1,0 +1,254 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module l1_data_cache_counter(
+		input wire iCLOCK,
+		input wire inRESET,
+		//Hit Information
+		input wire iCACHE_VALID,
+		input wire iCACHE_HIT,
+		//Information
+		output wire [6:0] oINFO_COUNT
+	);
+
+	reg [99:0] b_counter;
+	always@(posedge iCLOCK or negedge inRESET)begin
+		if(!inRESET)begin
+			b_counter <= 100'h0;
+		end
+		else begin
+			if(iCACHE_VALID)begin
+				b_counter <= {b_counter[98:0], iCACHE_HIT};
+			end
+		end
+	end
+	
+	reg [3:0] b_buffer0[0:9];	//10*10
+	reg [5:0] b_buffer1[0:1];	//50*2
+	reg [6:0] b_buffer2;		//100*1
+	always@(posedge iCLOCK or negedge inRESET)begin
+		if(!inRESET)begin
+			b_buffer0[0] <= 4'h0;
+			b_buffer0[1] <= 4'h0;
+			b_buffer0[2] <= 4'h0;
+			b_buffer0[3] <= 4'h0;
+			b_buffer0[4] <= 4'h0;
+			b_buffer0[5] <= 4'h0;
+			b_buffer0[6] <= 4'h0;
+			b_buffer0[7] <= 4'h0;
+			b_buffer0[8] <= 4'h0;
+			b_buffer0[9] <= 4'h0;
+			b_buffer1[0] <= 6'h0;
+			b_buffer1[1] <= 6'h1;
+			b_buffer2 <= 7'h0;
+		end
+		else begin
+			//Buffer0
+			b_buffer0[0] <= 4'h0
+							+ b_counter[0] + b_counter[1] + b_counter[2] + b_counter[3] + b_counter[4]
+							+ b_counter[5] + b_counter[6] + b_counter[7] + b_counter[8] + b_counter[9];
+			b_buffer0[1] <= 4'h0
+							+ b_counter[10] + b_counter[11] + b_counter[12] + b_counter[13] + b_counter[14]
+							+ b_counter[15] + b_counter[16] + b_counter[17] + b_counter[18] + b_counter[19];
+			b_buffer0[2] <= 4'h0
+							+ b_counter[20] + b_counter[21] + b_counter[22] + b_counter[23] + b_counter[24]
+							+ b_counter[25] + b_counter[26] + b_counter[27] + b_counter[28] + b_counter[29];
+			b_buffer0[3] <= 4'h0
+							+ b_counter[30] + b_counter[31] + b_counter[32] + b_counter[33] + b_counter[34]
+							+ b_counter[35] + b_counter[36] + b_counter[37] + b_counter[38] + b_counter[39];
+			b_buffer0[4] <= 4'h0
+							+ b_counter[40] + b_counter[41] + b_counter[42] + b_counter[43] + b_counter[44]
+							+ b_counter[45] + b_counter[46] + b_counter[47] + b_counter[48] + b_counter[49];
+			b_buffer0[5] <= 4'h0
+							+ b_counter[50] + b_counter[51] + b_counter[52] + b_counter[53] + b_counter[54]
+							+ b_counter[55] + b_counter[56] + b_counter[57] + b_counter[58] + b_counter[59];
+			b_buffer0[6] <= 4'h0
+							+ b_counter[60] + b_counter[61] + b_counter[62] + b_counter[63] + b_counter[64]
+							+ b_counter[65] + b_counter[66] + b_counter[67] + b_counter[68] + b_counter[69];
+			b_buffer0[7] <= 4'h0
+							+ b_counter[70] + b_counter[71] + b_counter[72] + b_counter[73] + b_counter[74]
+							+ b_counter[75] + b_counter[76] + b_counter[77] + b_counter[78] + b_counter[79];
+			b_buffer0[8] <= 4'h0
+							+ b_counter[80] + b_counter[81] + b_counter[82] + b_counter[83] + b_counter[84]
+							+ b_counter[85] + b_counter[86] + b_counter[87] + b_counter[88] + b_counter[89];
+			b_buffer0[9] <= 4'h0
+							+ b_counter[90] + b_counter[91] + b_counter[92] + b_counter[93] + b_counter[94]
+							+ b_counter[95] + b_counter[96] + b_counter[97] + b_counter[98] + b_counter[99];
+			b_buffer1[0] <= 6'h0 + b_buffer0[0] + b_buffer0[1] + b_buffer0[2] + b_buffer0[3] + b_buffer0[4];
+			b_buffer1[1] <= 6'h0 + b_buffer0[5] + b_buffer0[6] + b_buffer0[7] + b_buffer0[8] + b_buffer0[9]; 
+			b_buffer2 <= b_buffer1[0] + b_buffer1[1];
+		end
+	end 
+	
+	assign oINFO_COUNT = b_buffer2;
+	
+endmodule
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module clock_gate(
+    input clk,
+    input en,
+    input te,
+    output reg enclk
+    );
+
+    always @ (posedge clk) begin
+        if(en && te) begin
+            enclk <= 1'b1;
+        end
+        else begin
+            enclk <= 1'b0;
+        end
+    end
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module d_ff_ce_clr(clk, d, ce, clr, q);
+input clk, d, ce, clr;
+output q;
+reg q;
+
+always @(posedge clk) begin
+  if (clr) begin
+    q <= 1'b0;
+  end else if (ce) begin
+    q <= d;
+  end
+end
+
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module binary_to_bcd (
+    input [3:0] binary_in,
+    output reg [3:0] bcd_out
+);
+
+always @* begin
+    case (binary_in)
+        4'b0000: bcd_out = 4'b0000;
+        4'b0001: bcd_out = 4'b0001;
+        4'b0010: bcd_out = 4'b0010;
+        4'b0011: bcd_out = 4'b0011;
+        4'b0100: bcd_out = 4'b0100;
+        4'b0101: bcd_out = 4'b0101;
+        4'b0110: bcd_out = 4'b0110;
+        4'b0111: bcd_out = 4'b0111;
+        4'b1000: bcd_out = 4'b1000;
+        4'b1001: bcd_out = 4'b1001;
+        4'b1010: bcd_out = 4'b0001;
+        4'b1011: bcd_out = 4'b0010;
+        4'b1100: bcd_out = 4'b0011;
+        4'b1101: bcd_out = 4'b0100;
+        4'b1110: bcd_out = 4'b0101;
+        4'b1111: bcd_out = 4'b0110;
+    endcase
+end
+
+endmodule
+
+module seven_segment_display (
+    input [3:0] bcd_in,
+    output reg [6:0] display_out
+);
+
+always @* begin
+    case (bcd_in)
+        4'b0000: display_out = 7'b1000000;
+        4'b0001: display_out = 7'b1111001;
+        4'b0010: display_out = 7'b0100100;
+        4'b0011: display_out = 7'b0110000;
+        4'b0100: display_out = 7'b0011001;
+        4'b0101: display_out = 7'b0010010;
+        4'b0110: display_out = 7'b0000010;
+        4'b0111: display_out = 7'b1111000;
+        4'b1000: display_out = 7'b0000000;
+        4'b1001: display_out = 7'b0011000;
+        4'b1010: display_out = 7'b0000100;
+        4'b1011: display_out = 7'b0000001;
+        4'b1100: display_out = 7'b0000110;
+        4'b1101: display_out = 7'b0001111;
+        4'b1110: display_out = 7'b0000111;
+        4'b1111: display_out = 7'b0001110;
+    endcase
+end
+
+endmodule
+
+module top_module (
+    input clk,
+    input reset,
+    input [3:0] binary_in,
+    output reg [6:0] display_out
+);
+
+wire [3:0] bcd_out;
+wire [6:0] display_in;
+
+binary_to_bcd binary_to_bcd_inst (
+    .binary_in(binary_in),
+    .bcd_out(bcd_out)
+);
+
+seven_segment_display seven_segment_display_inst (
+    .bcd_in(bcd_out),
+    .display_out(display_in)
+);
+
+always @(posedge clk) begin
+    if (reset) begin
+        display_out <= 7'b0000000;
+    end else begin
+        display_out <= display_in;
+    end
+end
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+
+module RefModule (
+  input [3:0] in,
+  output reg [1:0] pos
+);
+
+  always @(*) begin
+    case (in)
+      4'h0: pos = 2'h0;
+      4'h1: pos = 2'h0;
+      4'h2: pos = 2'h1;
+      4'h3: pos = 2'h0;
+      4'h4: pos = 2'h2;
+      4'h5: pos = 2'h0;
+      4'h6: pos = 2'h1;
+      4'h7: pos = 2'h0;
+      4'h8: pos = 2'h3;
+      4'h9: pos = 2'h0;
+      4'ha: pos = 2'h1;
+      4'hb: pos = 2'h0;
+      4'hc: pos = 2'h2;
+      4'hd: pos = 2'h0;
+      4'he: pos = 2'h1;
+      4'hf: pos = 2'h0;
+      default: pos = 2'b0;
+    endcase
+  end
+
+endmodule
+
+
+```
+

@@ -1,0 +1,353 @@
+MODULE 1:
+Topic: memory
+```verilog
+module ddr_sdram_controller (
+    input core_clock_in,
+    input reset_n_core_clock_in,
+    input fr_clock_in,
+    input hr_clock_in,
+    input write_strobe_clock_in,
+    input [3:0] write_strobe,
+    input strobe_ena_hr_clock_in,
+    output capture_strobe_tracking,
+    inout [7:0] read_write_data_io,
+    input [15:0] write_oe_in,
+    inout strobe_io,
+    input [1:0] output_strobe_ena,
+    inout strobe_n_io,
+    input [1:0] oct_ena_in,
+    output [15:0] read_data_out,
+    output capture_strobe_out,
+    input [3:0] write_data_in,
+    input [1:0] extra_write_data_in,
+    output [1:0] extra_write_data_out,
+    input [15:0] parallelterminationcontrol_in,
+    input [15:0] seriesterminationcontrol_in,
+    input config_data_in,
+    input config_update,
+    input config_dqs_ena,
+    input [7:0] config_io_ena,
+    input [1:0] config_extra_io_ena,
+    input config_dqs_io_ena,
+    input config_clock_in,
+    input [1:0] lfifo_rdata_en,
+    input [1:0] lfifo_rdata_en_full,
+    input [4:0] lfifo_rd_latency,
+    input lfifo_reset_n,
+    output lfifo_rdata_valid,
+    input [1:0] vfifo_qvld,
+    input [1:0] vfifo_inc_wr_ptr,
+    input vfifo_reset_n,
+    input rfifo_reset_n,
+    input [6:0] dll_delayctrl_in
+);
+
+parameter DATA_WIDTH = 8;
+parameter CLOCK_FREQ = 100;
+parameter TERMINATION_CONTROL = 1;
+
+reg [7:0] read_write_data;
+reg [15:0] read_data;
+reg [1:0] extra_write_data;
+
+// DDR SDRAM memory controller implementation
+
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module input_pipeline (
+    clk,
+    clk_ena,
+    in_stream,
+    pipeline_reg_0,
+    pipeline_reg_1,
+    pipeline_reg_2,
+    pipeline_reg_3,
+    pipeline_reg_4,
+    pipeline_reg_5,
+    pipeline_reg_6,
+    pipeline_reg_7,
+    pipeline_reg_8,
+    pipeline_reg_9,
+    pipeline_reg_10,
+    pipeline_reg_11,
+    pipeline_reg_12,
+    pipeline_reg_13,
+    pipeline_reg_14,
+    pipeline_reg_15,
+    pipeline_reg_16,
+    pipeline_reg_17,
+    pipeline_reg_18,
+    pipeline_reg_19,
+    pipeline_reg_20,
+    pipeline_reg_21,
+    pipeline_reg_22,
+    pipeline_reg_23,
+    reset);
+    
+    parameter WIDTH = 1;
+    
+    input clk;
+    input clk_ena;
+    input [WIDTH-1:0] in_stream;
+    output [WIDTH-1:0] pipeline_reg_0;
+    output [WIDTH-1:0] pipeline_reg_1;
+    output [WIDTH-1:0] pipeline_reg_2;
+    output [WIDTH-1:0] pipeline_reg_3;
+    output [WIDTH-1:0] pipeline_reg_4;
+    output [WIDTH-1:0] pipeline_reg_5;
+    output [WIDTH-1:0] pipeline_reg_6;
+    output [WIDTH-1:0] pipeline_reg_7;
+    output [WIDTH-1:0] pipeline_reg_8;
+    output [WIDTH-1:0] pipeline_reg_9;
+    output [WIDTH-1:0] pipeline_reg_10;
+    output [WIDTH-1:0] pipeline_reg_11;
+    output [WIDTH-1:0] pipeline_reg_12;
+    output [WIDTH-1:0] pipeline_reg_13;
+    output [WIDTH-1:0] pipeline_reg_14;
+    output [WIDTH-1:0] pipeline_reg_15;
+    output [WIDTH-1:0] pipeline_reg_16;
+    output [WIDTH-1:0] pipeline_reg_17;
+    output [WIDTH-1:0] pipeline_reg_18;
+    output [WIDTH-1:0] pipeline_reg_19;
+    output [WIDTH-1:0] pipeline_reg_20;
+    output [WIDTH-1:0] pipeline_reg_21;
+    output [WIDTH-1:0] pipeline_reg_22;
+    output [WIDTH-1:0] pipeline_reg_23;
+    
+    reg [WIDTH-1:0] pipeline_reg_0;
+    reg [WIDTH-1:0] pipeline_reg_1;
+    reg [WIDTH-1:0] pipeline_reg_2;
+    reg [WIDTH-1:0] pipeline_reg_3;
+    reg [WIDTH-1:0] pipeline_reg_4;
+    reg [WIDTH-1:0] pipeline_reg_5;
+    reg [WIDTH-1:0] pipeline_reg_6;
+    reg [WIDTH-1:0] pipeline_reg_7;
+    reg [WIDTH-1:0] pipeline_reg_8;
+    reg [WIDTH-1:0] pipeline_reg_9;
+    reg [WIDTH-1:0] pipeline_reg_10;
+    reg [WIDTH-1:0] pipeline_reg_11;
+    reg [WIDTH-1:0] pipeline_reg_12;
+    reg [WIDTH-1:0] pipeline_reg_13;
+    reg [WIDTH-1:0] pipeline_reg_14;
+    reg [WIDTH-1:0] pipeline_reg_15;
+    reg [WIDTH-1:0] pipeline_reg_16;
+    reg [WIDTH-1:0] pipeline_reg_17;
+    reg [WIDTH-1:0] pipeline_reg_18;
+    reg [WIDTH-1:0] pipeline_reg_19;
+    reg [WIDTH-1:0] pipeline_reg_20;
+    reg [WIDTH-1:0] pipeline_reg_21;
+    reg [WIDTH-1:0] pipeline_reg_22;
+    reg [WIDTH-1:0] pipeline_reg_23;
+    
+    input reset;
+    
+    always@(posedge clk or posedge reset) begin
+        if(reset) begin
+            pipeline_reg_0 <= 0;
+            pipeline_reg_1 <= 0;
+            pipeline_reg_2 <= 0;
+            pipeline_reg_3 <= 0;
+            pipeline_reg_4 <= 0;
+            pipeline_reg_5 <= 0;
+            pipeline_reg_6 <= 0;
+            pipeline_reg_7 <= 0;
+            pipeline_reg_8 <= 0;
+            pipeline_reg_9 <= 0;
+            pipeline_reg_10 <= 0;
+            pipeline_reg_11 <= 0;
+            pipeline_reg_12 <= 0;
+            pipeline_reg_13 <= 0;
+            pipeline_reg_14 <= 0;
+            pipeline_reg_15 <= 0;
+            pipeline_reg_16 <= 0;
+            pipeline_reg_17 <= 0;
+            pipeline_reg_18 <= 0;
+            pipeline_reg_19 <= 0;
+            pipeline_reg_20 <= 0;
+            pipeline_reg_21 <= 0;
+            pipeline_reg_22 <= 0;
+            pipeline_reg_23 <= 0;
+        end else begin
+            if(clk_ena) begin
+                pipeline_reg_23 <= pipeline_reg_22;
+                pipeline_reg_22 <= pipeline_reg_21;
+                pipeline_reg_21 <= pipeline_reg_20;
+                pipeline_reg_20 <= pipeline_reg_19;
+                pipeline_reg_19 <= pipeline_reg_18;
+                pipeline_reg_18 <= pipeline_reg_17;
+                pipeline_reg_17 <= pipeline_reg_16;
+                pipeline_reg_16 <= pipeline_reg_15;
+                pipeline_reg_15 <= pipeline_reg_14;
+                pipeline_reg_14 <= pipeline_reg_13;
+                pipeline_reg_13 <= pipeline_reg_12;
+                pipeline_reg_12 <= pipeline_reg_11;
+                pipeline_reg_11 <= pipeline_reg_10;
+                pipeline_reg_10 <= pipeline_reg_9;
+                pipeline_reg_9 <= pipeline_reg_8;
+                pipeline_reg_8 <= pipeline_reg_7;
+                pipeline_reg_7 <= pipeline_reg_6;
+                pipeline_reg_6 <= pipeline_reg_5;
+                pipeline_reg_5 <= pipeline_reg_4;
+                pipeline_reg_4 <= pipeline_reg_3;
+                pipeline_reg_3 <= pipeline_reg_2;
+                pipeline_reg_2 <= pipeline_reg_1;
+                pipeline_reg_1 <= pipeline_reg_0;
+                pipeline_reg_0 <= in_stream;
+            end
+        end
+    end
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module clk_gen(clk100MHz, rst, clk_4sec, clk_5KHz);
+  input clk100MHz, rst;
+  output clk_4sec, clk_5KHz;
+  reg clk_4sec, clk_5KHz;
+  integer count, count1;
+
+  always @(posedge clk100MHz or negedge rst) begin
+    if (!rst) begin
+      count = 0;
+      count1 = 0;
+      clk_4sec = 0;
+      clk_5KHz = 0;
+    end else begin
+      if (count == 200000000) begin
+        clk_4sec = ~clk_4sec;
+        count = 0;
+      end
+      if (count1 == 10000) begin
+        clk_5KHz = ~clk_5KHz;
+        count1 = 0;
+      end
+      count = count + 1;
+      count1 = count1 + 1;
+    end
+  end
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module Uart_rx(
+    input clk,
+    input rst_n,
+    input rs232_rx,
+    input [3:0] num,
+    input sel_data,
+    output rx_en,
+    output reg tx_en,
+    output reg [7:0] rx_data
+);
+
+// Internal signals
+reg in_1, in_2;
+reg [7:0] rx_data_r;
+
+// Detect start bit
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        in_1 <= 1'b1;
+        in_2 <= 1'b1;
+    end else begin
+        in_1 <= rs232_rx;
+        in_2 <= in_1;
+    end
+end
+
+assign rx_en = in_2 & (~in_1);
+
+// Collect data bits
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        rx_data_r <= 8'd0;
+        rx_data <= 8'd0;
+    end else begin
+        if (sel_data) begin
+            case (num)
+                0: ; // Ignore start bit
+                1: rx_data_r[0] <= rs232_rx; // Collect data bits
+                2: rx_data_r[1] <= rs232_rx;
+                3: rx_data_r[2] <= rs232_rx;
+                4: rx_data_r[3] <= rs232_rx;
+                5: rx_data_r[4] <= rs232_rx;
+                6: rx_data_r[5] <= rs232_rx;
+                7: rx_data_r[6] <= rs232_rx;
+                8: rx_data_r[7] <= rs232_rx;
+                9: rx_data <= rx_data_r; // Store collected data bits
+                default: ; // Default case
+            endcase
+        end
+    end
+end
+
+// Enable transmission of data
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        tx_en <= 0;
+    end else begin
+        if ((num == 4'd9) && sel_data) begin
+            tx_en <= 1;
+        end else begin
+            tx_en <= 0;
+        end
+    end
+end
+
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module tri_state_bridge_flash_bridge_arbitrator (
+    input clk,
+    input rst,
+    input req,
+    input req_clk,
+    output reg busy,
+    output reg req_out,
+    output reg grant_out,
+    input grant_clk
+);
+
+reg [1:0] priority;
+
+always @(posedge clk) begin
+    if (rst) begin
+        busy <= 0;
+        priority <= 0;
+    end else begin
+        if (req && !busy) begin
+            priority <= (req_clk > grant_clk) ? 2'b10 : 2'b01;
+            req_out <= req;
+            busy <= 1;
+        end else if (!req && busy) begin
+            busy <= 0;
+        end
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        grant_out <= 0;
+    end else begin
+        if (priority == 2'b10) begin
+            grant_out <= req_out;
+        end else if (grant_out && !busy) begin
+            grant_out <= 0;
+        end
+    end
+end
+
+endmodule
+```
+

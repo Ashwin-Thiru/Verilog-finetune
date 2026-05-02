@@ -1,0 +1,124 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module mux4_1(
+    input [7:0] A,
+    input [7:0] B,
+    input [7:0] C,
+    input [7:0] D,
+    input [1:0] S,
+    output reg [7:0] Y
+    );
+
+always @(*)
+begin
+    case (S)
+        2'b00: Y = A;
+        2'b01: Y = B;
+        2'b10: Y = C;
+        2'b11: Y = D;
+        default: Y = 8'b0; // Default output if S is invalid
+    endcase
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module ripple_carry_adder (
+    input [3:0] A,
+    input [3:0] B,
+    output reg [3:0] SUM,
+    output reg CARRY
+);
+
+reg [3:0] carry_chain;
+
+always @(*) begin
+    SUM = A + B + carry_chain;
+    CARRY = (A[3] & B[3]) | (A[3] & carry_chain[2]) | (B[3] & carry_chain[2]);
+end
+
+// Implement the carry chain using a for loop
+integer i;
+initial begin
+    carry_chain[0] = 1'b0;
+    for (i = 1; i < 4; i = i + 1) begin
+        carry_chain[i] = (A[i-1] & B[i-1]) | (A[i-1] & carry_chain[i-1]) | (B[i-1] & carry_chain[i-1]);
+    end
+end
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module up_down_counter (
+    input clk,
+    input reset,
+    input up_down,
+    output reg [2:0] count,
+    output max_reached
+);
+
+    reg [2:0] next_count;
+
+    always @ (posedge clk or posedge reset) begin
+        if (reset) begin
+            count <= 3'b0;
+        end else begin
+            if (up_down) begin
+                next_count <= count + 1;
+            end else begin
+                next_count <= count - 1;
+            end
+            count <= next_count;
+        end
+    end
+
+    assign max_reached = (count == 3'b111);
+
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module d_ffsr(CLK, D, S, R, Q, QN);
+  input CLK, D, S, R;
+  output Q, QN;
+  reg Q;
+
+  always @(posedge CLK) begin
+    if (S == 1'b1) begin
+      Q <= 1'b1;
+    end else if (R == 1'b1) begin
+      Q <= 1'b0;
+    end else begin
+      Q <= D;
+    end
+  end
+
+  assign QN = ~Q;
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module d_flip_flop (
+    input clk, 
+    input d,
+    output reg q );
+
+    always @(posedge clk) begin
+        q <= d;
+    end
+
+endmodule
+```
+

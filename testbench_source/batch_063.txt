@@ -1,0 +1,295 @@
+MODULE 1:
+Topic: pipeline
+```verilog
+module pipedelayreg(d,en,clk,resetn,squashn,dst,stalled,q);
+
+input [31:0] d;
+input [4:0] dst;
+input en;
+input clk;
+input resetn;
+input squashn;
+output stalled;
+output [31:0] q;
+
+reg [31:0] q;
+reg T,Tnext;
+
+always@(en or T or dst)
+begin
+  case(T) 
+    0: Tnext=en&(|dst);
+    1: Tnext=0;
+  endcase 
+end       
+always@(posedge clk)
+  if (~resetn)
+    T<=0; 
+  else    
+    T<=Tnext;
+
+always @(posedge clk)
+begin
+  if (resetn==0 || squashn==0)
+    q<=0;
+  else if (en==1)
+    q<=d;
+end
+
+assign stalled=(en&~T&(|dst));
+
+endmodule
+```
+
+MODULE 2:
+Topic: pipeline
+```verilog
+module OptimizationBarrier_TLBEntryData_126(	// @[package.scala:267:30]
+  input         clock,	// @[package.scala:267:30]
+  input         reset,	// @[package.scala:267:30]
+  input  [19:0] io_x_ppn,	// @[package.scala:268:18]
+  input         io_x_u,	// @[package.scala:268:18]
+  input         io_x_g,	// @[package.scala:268:18]
+  input         io_x_ae_ptw,	// @[package.scala:268:18]
+  input         io_x_ae_final,	// @[package.scala:268:18]
+  input         io_x_ae_stage2,	// @[package.scala:268:18]
+  input         io_x_pf,	// @[package.scala:268:18]
+  input         io_x_gf,	// @[package.scala:268:18]
+  input         io_x_sw,	// @[package.scala:268:18]
+  input         io_x_sx,	// @[package.scala:268:18]
+  input         io_x_sr,	// @[package.scala:268:18]
+  input         io_x_hw,	// @[package.scala:268:18]
+  input         io_x_hx,	// @[package.scala:268:18]
+  input         io_x_hr,	// @[package.scala:268:18]
+  input         io_x_pw,	// @[package.scala:268:18]
+  input         io_x_px,	// @[package.scala:268:18]
+  input         io_x_pr,	// @[package.scala:268:18]
+  input         io_x_ppp,	// @[package.scala:268:18]
+  input         io_x_pal,	// @[package.scala:268:18]
+  input         io_x_paa,	// @[package.scala:268:18]
+  input         io_x_eff,	// @[package.scala:268:18]
+  input         io_x_c,	// @[package.scala:268:18]
+  input         io_x_fragmented_superpage,	// @[package.scala:268:18]
+  output [19:0] io_y_ppn	// @[package.scala:268:18]
+);
+
+  wire [19:0] io_x_ppn_0 = io_x_ppn;	// @[package.scala:267:30]
+  wire        io_x_u_0 = io_x_u;	// @[package.scala:267:30]
+  wire        io_x_g_0 = io_x_g;	// @[package.scala:267:30]
+  wire        io_x_ae_ptw_0 = io_x_ae_ptw;	// @[package.scala:267:30]
+  wire        io_x_ae_final_0 = io_x_ae_final;	// @[package.scala:267:30]
+  wire        io_x_ae_stage2_0 = io_x_ae_stage2;	// @[package.scala:267:30]
+  wire        io_x_pf_0 = io_x_pf;	// @[package.scala:267:30]
+  wire        io_x_gf_0 = io_x_gf;	// @[package.scala:267:30]
+  wire        io_x_sw_0 = io_x_sw;	// @[package.scala:267:30]
+  wire        io_x_sx_0 = io_x_sx;	// @[package.scala:267:30]
+  wire        io_x_sr_0 = io_x_sr;	// @[package.scala:267:30]
+  wire        io_x_hw_0 = io_x_hw;	// @[package.scala:267:30]
+  wire        io_x_hx_0 = io_x_hx;	// @[package.scala:267:30]
+  wire        io_x_hr_0 = io_x_hr;	// @[package.scala:267:30]
+  wire        io_x_pw_0 = io_x_pw;	// @[package.scala:267:30]
+  wire        io_x_px_0 = io_x_px;	// @[package.scala:267:30]
+  wire        io_x_pr_0 = io_x_pr;	// @[package.scala:267:30]
+  wire        io_x_ppp_0 = io_x_ppp;	// @[package.scala:267:30]
+  wire        io_x_pal_0 = io_x_pal;	// @[package.scala:267:30]
+  wire        io_x_paa_0 = io_x_paa;	// @[package.scala:267:30]
+  wire        io_x_eff_0 = io_x_eff;	// @[package.scala:267:30]
+  wire        io_x_c_0 = io_x_c;	// @[package.scala:267:30]
+  wire        io_x_fragmented_superpage_0 = io_x_fragmented_superpage;	// @[package.scala:267:30]
+  wire [19:0] io_y_ppn_0 = io_x_ppn_0;	// @[package.scala:267:30]
+  wire        io_y_u = io_x_u_0;	// @[package.scala:267:30]
+  wire        io_y_g = io_x_g_0;	// @[package.scala:267:30]
+  wire        io_y_ae_ptw = io_x_ae_ptw_0;	// @[package.scala:267:30]
+  wire        io_y_ae_final = io_x_ae_final_0;	// @[package.scala:267:30]
+  wire        io_y_ae_stage2 = io_x_ae_stage2_0;	// @[package.scala:267:30]
+  wire        io_y_pf = io_x_pf_0;	// @[package.scala:267:30]
+  wire        io_y_gf = io_x_gf_0;	// @[package.scala:267:30]
+  wire        io_y_sw = io_x_sw_0;	// @[package.scala:267:30]
+  wire        io_y_sx = io_x_sx_0;	// @[package.scala:267:30]
+  wire        io_y_sr = io_x_sr_0;	// @[package.scala:267:30]
+  wire        io_y_hw = io_x_hw_0;	// @[package.scala:267:30]
+  wire        io_y_hx = io_x_hx_0;	// @[package.scala:267:30]
+  wire        io_y_hr = io_x_hr_0;	// @[package.scala:267:30]
+  wire        io_y_pw = io_x_pw_0;	// @[package.scala:267:30]
+  wire        io_y_px = io_x_px_0;	// @[package.scala:267:30]
+  wire        io_y_pr = io_x_pr_0;	// @[package.scala:267:30]
+  wire        io_y_ppp = io_x_ppp_0;	// @[package.scala:267:30]
+  wire        io_y_pal = io_x_pal_0;	// @[package.scala:267:30]
+  wire        io_y_paa = io_x_paa_0;	// @[package.scala:267:30]
+  wire        io_y_eff = io_x_eff_0;	// @[package.scala:267:30]
+  wire        io_y_c = io_x_c_0;	// @[package.scala:267:30]
+  wire        io_y_fragmented_superpage = io_x_fragmented_superpage_0;	// @[package.scala:267:30]
+  assign io_y_ppn = io_y_ppn_0;	// @[package.scala:267:30]
+endmodule
+```
+
+MODULE 3:
+Topic: pipeline
+```verilog
+module sqrt_pipelined (
+  input clk,
+  input reset_n,
+  input start,
+  input [3:0] radicand,
+  output reg data_valid,
+  output reg [2:0] root
+);
+
+  reg [3:0] count;
+  reg [3:0] remainder;
+  reg [3:0] temp;
+  reg [2:0] int_part;
+  reg [1:0] frac_part;
+  reg [3:0] x;
+  reg [1:0] y;
+  reg [1:0] z;
+  reg [3:0] x_next;
+  reg [1:0] y_next;
+  reg [1:0] z_next;
+  reg [1:0] q;
+  reg [2:0] r;
+
+  // Binary search stage
+  always @(posedge clk or negedge reset_n) begin
+    if (~reset_n) begin
+      count <= 0;
+      remainder <= 0;
+      temp <= 0;
+      int_part <= 0;
+    end else if (start) begin
+      count <= 3;
+      remainder <= radicand;
+      temp <= 0;
+      int_part <= 0;
+    end else if (count > 0) begin
+      temp <= {remainder, 2'b0};
+      remainder <= temp - ((int_part << 1) + 1);
+      int_part <= {int_part[1:0], 1'b0} | (temp >= ((int_part << 2) + (int_part << 1) + 1));
+      count <= count - 1;
+    end else begin
+      count <= 0;
+      remainder <= 0;
+      temp <= 0;
+      int_part <= {int_part[1:0], 1'b0} | (remainder >= ((int_part << 2) + (int_part << 1) + 1));
+    end
+  end
+
+  // Linear interpolation stage
+  always @(posedge clk or negedge reset_n) begin
+    if (~reset_n) begin
+      x <= 0;
+      y <= 0;
+      z <= 0;
+      frac_part <= 0;
+      q <= 0;
+      r <= 0;
+    end else if (start && int_part != 0) begin
+      x <= int_part;
+      y <= 1;
+      z <= remainder;
+      frac_part <= 0;
+      q <= 0;
+      r <= 0;
+    end else if (int_part != 0) begin
+      x_next <= x - (y << 1);
+      y_next <= y + 2;
+      z_next <= (z << 2) - ((x << 2) + (x << 1) + y_next);
+      q <= (z_next >= 0) ? 1'b1 : 1'b0;
+      r <= (q == 1'b1) ? z_next : z;
+      x <= x_next;
+      y <= y_next;
+      z <= r;
+      frac_part <= frac_part | (q << (1 - frac_part));
+    end else begin
+      frac_part <= 0;
+    end
+  end
+
+  // Output stage
+  always @(posedge clk or negedge reset_n) begin
+    if (~reset_n) begin
+      data_valid <= 0;
+      root <= 0;
+    end else if (start && int_part != 0) begin
+      data_valid <= 0;
+      root <= 0;
+    end else if (int_part != 0) begin
+      data_valid <= 1;
+      root <= {int_part, frac_part};
+    end else begin
+      data_valid <= 0;
+      root <= 0;
+    end
+  end
+
+endmodule
+```
+
+MODULE 4:
+Topic: pipeline
+```verilog
+module shift_register ( input clk, input d, output reg [2:0] q );
+
+  reg [2:0] q_reg1, q_reg2;
+
+  always @(posedge clk) begin
+    q_reg1 <= d;
+    q_reg2 <= q_reg1;
+    q <= q_reg2;
+  end
+
+endmodule
+```
+
+MODULE 5:
+Topic: pipeline
+```verilog
+module shift_register(
+    input clk,
+    input areset,  // async active-high reset to zero
+    input load,
+    input ena,
+    input [3:0] data,
+    output reg [3:0] q
+);
+
+reg [3:0] shift_reg [0:2];
+reg [1:0] shift_amt;
+reg [3:0] load_data;
+
+always @(posedge clk) begin
+    if (areset) begin
+        shift_reg[0] <= 4'b0;
+        shift_reg[1] <= 4'b0;
+        shift_reg[2] <= 4'b0;
+        shift_amt <= 2'b0;
+        q <= 4'b0;
+    end else begin
+        if (load & ena) begin
+            load_data <= data;
+        end
+        shift_reg[0] <= {shift_reg[0][2:0], shift_reg[1][3]};
+        shift_reg[1] <= {shift_reg[1][2:0], shift_reg[2][3]};
+        shift_reg[2] <= {shift_reg[2][2:0], load_data[3]};
+        case (shift_amt)
+            2'b00: q <= shift_reg[0];
+            2'b01: q <= shift_reg[1];
+            2'b10: q <= shift_reg[2];
+            2'b11: q <= 4'b0;
+        endcase
+    end
+end
+
+always @(posedge clk) begin
+    if (areset) begin
+        shift_amt <= 2'b0;
+    end else begin
+        if (ena) begin
+            shift_amt <= {shift_amt[0], load};
+        end
+    end
+end
+
+endmodule
+```
+

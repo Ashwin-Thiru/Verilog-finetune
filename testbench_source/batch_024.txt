@@ -1,0 +1,109 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module reverse_bits (
+  input [7:0] in_vec,
+  output reg [7:0] out_vec
+);
+
+integer i;
+reg temp;
+
+always @(*) begin
+  for(i=0; i<4; i=i+1) begin
+    temp = in_vec[i];
+    out_vec[i] = in_vec[7-i];
+    out_vec[7-i] = temp;
+  end
+end
+
+endmodule
+
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module edge_detector(
+    input clk,
+    input [7:0] in,
+    output reg [7:0] anyedge
+);
+
+reg [7:0] prev_in;
+reg [7:0] edge_detected;
+
+always @(posedge clk) begin
+    prev_in <= in;
+    edge_detected <= in ^ prev_in;
+    anyedge <= edge_detected;
+end
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module comparator(
+    input [1:0] A,
+    input [1:0] B,
+    output reg Z
+);
+
+    always @ (*) begin
+        if(A[1] > B[1]) begin
+            Z = 1;
+        end else if(A[1] < B[1]) begin
+            Z = -1;
+        end else if(A[0] > B[0]) begin
+            Z = 1;
+        end else if(A[0] < B[0]) begin
+            Z = -1;
+        end else begin
+            Z = 0;
+        end
+    end
+
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module clock_generator(
+    input reset,
+    output reg clock
+);
+
+always @(posedge reset or negedge clock)
+    if (reset)
+        clock <= 0;
+    else
+        #5 clock <= ~clock;
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module binary_to_onehot (
+    input [3:0] B,
+    output reg [7:0] O
+);
+
+always @(*)
+begin
+    case(B)
+        4'b0001: O = 8'b00000001;
+        4'b0010: O = 8'b00000010;
+        4'b0100: O = 8'b00000100;
+        4'b1000: O = 8'b00001000;
+        default: O = 8'b00000000;
+    endcase
+end
+
+endmodule
+```
+

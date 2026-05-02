@@ -1,0 +1,129 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module nand_7410 (
+  input wire a1, b1, c1,
+  input wire a2, b2, c2,
+  input wire a3, b3, c3,
+  output reg out1,
+  output reg out2,
+  output reg out3
+);
+
+  always @*
+    begin
+      out1 = ~(a1 & b1 & c1);
+      out2 = ~(a2 & b2 & c2);
+      out3 = ~(a3 & b3 & c3);
+    end
+
+endmodule
+
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module input_pulse_toggle(
+   // Inputs
+   clk, in, reset,
+   // Outputs
+   out
+   );
+
+   input clk, in, reset;
+   output reg out;
+
+   reg prev_in;
+   wire toggle;
+
+   always @(posedge clk or negedge reset) begin
+      if (!reset) begin
+         out <= 1'b0;
+         prev_in <= 1'b0;
+      end
+      else begin
+         prev_in <= in;
+         out <= toggle;
+      end
+   end
+
+   assign toggle = (in & ~prev_in) ? ~out : out;
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module dff_clear_reset(
+    input clock,
+    input clr,
+    input clr_val,
+    input d,
+    output reg q
+);
+
+    always @(posedge clock) begin
+        if (clr == 0) begin
+            q <= 0;
+        end else if (clr_val == 1) begin
+            q <= d;
+        end
+    end
+
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module calculator (
+  input clk,
+  input rst,
+  input signed [7:0] a,
+  input signed [7:0] b,
+  input [1:0] op,
+  output signed [7:0] result
+);
+
+reg [7:0] temp;
+
+always @(posedge clk or negedge rst) begin
+  if (!rst) begin
+    temp <= 8'b0;
+  end else begin
+    case (op)
+      2'b00: temp <= a + b; // Addition
+      2'b01: temp <= a - b; // Subtraction
+      2'b10: temp <= a * b; // Multiplication
+      2'b11: temp <= a / b; // Division
+    endcase
+  end
+end
+
+assign result = temp;
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module up_counter(
+    input clk,
+    input reset_n,
+    output reg [2:0] count
+);
+
+    always @(posedge clk or negedge reset_n) begin
+        if (~reset_n) begin
+            count <= 3'b0;
+        end else begin
+            count <= count + 1;
+        end
+    end
+
+endmodule
+```
+

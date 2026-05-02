@@ -1,0 +1,207 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module adder_subtractor_module (
+  input [3:0] a,
+  input [3:0] b,
+  input sub,
+  output [3:0] result
+);
+
+  wire [3:0] adder_out;
+  wire [3:0] twos_complement_b;
+  wire carry_out;
+  
+  // Calculate the twos complement of b if we are performing subtraction
+  assign twos_complement_b = sub ? (~b + 1) : b;
+  
+  // Calculate the output of the adder
+  full_adder fa0(.a(a[0]), .b(twos_complement_b[0]), .c_in(sub), .sum(adder_out[0]), .c_out(carry_out));
+  full_adder fa1(.a(a[1]), .b(twos_complement_b[1]), .c_in(carry_out), .sum(adder_out[1]), .c_out(carry_out));
+  full_adder fa2(.a(a[2]), .b(twos_complement_b[2]), .c_in(carry_out), .sum(adder_out[2]), .c_out(carry_out));
+  full_adder fa3(.a(a[3]), .b(twos_complement_b[3]), .c_in(carry_out), .sum(adder_out[3]), .c_out(carry_out));
+  
+  // Set the result to the output of the adder
+  assign result = adder_out;
+
+endmodule
+
+module full_adder (
+  input a,
+  input b,
+  input c_in,
+  output sum,
+  output c_out
+);
+
+  assign {c_out, sum} = a + b + c_in;
+
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module four_bit_adder(
+    input [3:0] A,
+    input [3:0] B,
+    input CIN,
+    output [3:0] S,
+    output COUT
+);
+
+wire [3:0] carry;
+full_adder fa0(A[0], B[0], CIN, S[0], carry[0]);
+full_adder fa1(A[1], B[1], carry[0], S[1], carry[1]);
+full_adder fa2(A[2], B[2], carry[1], S[2], carry[2]);
+full_adder fa3(A[3], B[3], carry[2], S[3], COUT);
+
+endmodule
+
+module full_adder(
+    input A,
+    input B,
+    input CIN,
+    output SUM,
+    output COUT
+);
+
+wire w1, w2;
+assign w1 = A ^ B;
+assign SUM = w1 ^ CIN;
+assign w2 = A & B;
+assign COUT = (w2 | (w1 & CIN));
+
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module binary_adder (
+    A,
+    B,
+    C_in,
+    S,
+    C_out
+);
+
+    input [3:0] A;
+    input [3:0] B;
+    input C_in;
+    output [3:0] S;
+    output C_out;
+
+    // Voltage supply signals
+    supply1 VPWR;
+    supply0 VGND;
+    supply1 VPB ;
+    supply0 VNB ;
+
+    wire [3:0] sum;
+    wire carry;
+
+    assign sum = A + B + C_in;
+    assign S = sum[3:0];
+    assign carry = sum[4];
+
+    assign C_out = carry;
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module addsub (
+  input [3:0] A, B,
+  input SUB,
+  output [3:0] OUT
+);
+
+  wire [3:0] B_INV;
+  wire [3:0] CARRY;
+  
+  // Invert B when SUB is 1
+  assign B_INV = SUB ? ~B + 1 : B;
+  
+  // First full adder for the least significant bit
+  full_adder FA0(
+    .A(A[0]),
+    .B(B_INV[0]),
+    .CIN(SUB),
+    .SUM(OUT[0]),
+    .COUT(CARRY[0])
+  );
+  
+  // Full adders for the remaining bits
+  full_adder FA1(
+    .A(A[1]),
+    .B(B_INV[1]),
+    .CIN(CARRY[0]),
+    .SUM(OUT[1]),
+    .COUT(CARRY[1])
+  );
+  
+  full_adder FA2(
+    .A(A[2]),
+    .B(B_INV[2]),
+    .CIN(CARRY[1]),
+    .SUM(OUT[2]),
+    .COUT(CARRY[2])
+  );
+  
+  full_adder FA3(
+    .A(A[3]),
+    .B(B_INV[3]),
+    .CIN(CARRY[2]),
+    .SUM(OUT[3]),
+    .COUT(CARRY[3])
+  );
+  
+endmodule
+
+// Full adder module
+module full_adder (
+  input A, B, CIN,
+  output SUM, COUT
+);
+
+  assign SUM = A ^ B ^ CIN;
+  assign COUT = (A & B) | (A & CIN) | (B & CIN);
+  
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module four_bit_adder (
+    input [3:0] A,
+    input [3:0] B,
+    input Cin,
+    output [3:0] Sum,
+    output Cout
+);
+
+    wire [3:0] temp_sum;
+    wire [3:0] temp_carry;
+
+    // Full Adder
+    assign temp_sum[0] = A[0] ^ B[0] ^ Cin;
+    assign temp_carry[0] = (A[0] & B[0]) | (A[0] & Cin) | (B[0] & Cin);
+
+    assign temp_sum[1] = A[1] ^ B[1] ^ temp_carry[0];
+    assign temp_carry[1] = (A[1] & B[1]) | (A[1] & temp_carry[0]) | (B[1] & temp_carry[0]);
+
+    assign temp_sum[2] = A[2] ^ B[2] ^ temp_carry[1];
+    assign temp_carry[2] = (A[2] & B[2]) | (A[2] & temp_carry[1]) | (B[2] & temp_carry[1]);
+
+    assign temp_sum[3] = A[3] ^ B[3] ^ temp_carry[2];
+    assign Cout = (A[3] & B[3]) | (A[3] & temp_carry[2]) | (B[3] & temp_carry[2]);
+
+    assign Sum = temp_sum;
+
+endmodule
+```
+

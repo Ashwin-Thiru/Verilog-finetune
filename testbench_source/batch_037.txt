@@ -1,0 +1,233 @@
+MODULE 1:
+Topic: memory
+```verilog
+module PLL_DLL (
+  input clk_in,
+  input rst,
+  input enable,
+  input pll_freq,
+  input dll_delay,
+  output pll_out,
+  output dll_out
+);
+
+  // Define any necessary parameters or constants here.
+  parameter CLK_DIV = 2;
+  parameter PHASE_BITS = 8;
+  parameter CHARGE_PUMP_GAIN = 1;
+  parameter MAX_DELAY = 10;
+  parameter DELAY_BITS = 4;
+  
+  // Define internal signals
+  reg [PHASE_BITS-1:0] phase_accumulator;
+  reg [PHASE_BITS-1:0] delay_accumulator;
+  reg [DELAY_BITS-1:0] delay_value;
+  reg [PHASE_BITS-1:0] phase_error;
+  reg [PHASE_BITS-1:0] delay_error;
+  reg [PHASE_BITS-1:0] vco_control;
+  reg [PHASE_BITS-1:0] charge_pump_output;
+  reg [PHASE_BITS-1:0] delay_line_output;
+  reg [PHASE_BITS-1:0] pll_output;
+  reg [PHASE_BITS-1:0] dll_output;
+  
+  // Define PLL components
+  always @(posedge clk_in or posedge rst) begin
+    if (rst) begin
+      phase_accumulator <= 0;
+      vco_control <= 0;
+    end else if (enable) begin
+      phase_accumulator <= phase_accumulator + vco_control;
+      phase_error <= pll_freq - (clk_in * CLK_DIV) / (1 << PHASE_BITS);
+      charge_pump_output <= phase_error * CHARGE_PUMP_GAIN;
+      vco_control <= charge_pump_output;
+    end
+  end
+  
+  // Define DLL components
+  always @(posedge clk_in or posedge rst) begin
+    if (rst) begin
+      delay_accumulator <= 0;
+      delay_value <= 0;
+    end else if (enable) begin
+      delay_accumulator <= delay_accumulator + delay_value;
+      delay_error <= dll_delay - (delay_accumulator >> (PHASE_BITS - DELAY_BITS));
+      delay_value <= delay_error;
+    end
+  end
+  
+  // Define frequency divider for PLL output
+  always @(posedge clk_in or posedge rst) begin
+    if (rst) begin
+      pll_output <= 0;
+    end else if (enable) begin
+      pll_output <= (pll_output + 1) % CLK_DIV;
+    end
+  end
+  
+  // Define delay line for DLL output
+  always @(posedge clk_in or posedge rst) begin
+    if (rst) begin
+      delay_line_output <= 0;
+    end else if (enable) begin
+      delay_line_output <= delay_accumulator >> PHASE_BITS;
+    end
+  end
+  
+  // Define outputs
+  assign pll_out = (pll_output == 0) ? 1 : 0;
+  assign dll_out = delay_line_output;
+  
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module displayport_transmitter (
+  input [23:0] video_data,
+  input hsync,
+  input vsync,
+  input clock,
+  output reg [9:0] data_out,
+  output reg h_sync_out,
+  output reg v_sync_out,
+  output reg clock_out
+);
+  // DisplayPort transmitter implementation goes here
+endmodule
+
+module displayport_receiver (
+  input [9:0] data_in,
+  input h_sync_in,
+  input v_sync_in,
+  input clock_in,
+  output reg [23:0] video_data_out,
+  output reg hsync_out,
+  output reg vsync_out,
+  output reg clock_out
+);
+  // DisplayPort receiver implementation goes here
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module resultcounter (resultID, newresult, done, reset, globalreset, clk);
+
+    input[1:0] resultID; 
+    input newresult; 
+    output[1:0] done; 
+    wire[1:0] done;
+    input reset; 
+    input globalreset; 
+    input clk; 
+
+    reg[3:0] count; 
+    reg[1:0] curr; 
+
+    assign done = (count == 0) ? curr : 2'b00 ;
+
+    always @(posedge clk or posedge reset or posedge globalreset)
+    begin
+        if (globalreset)
+        begin
+            count <= 4'b1000;
+            curr <= 2'b00;
+        end
+        else if (reset)
+        begin
+            count <= 4'b1000;
+        end
+        else if (newresult && resultID != 2'b00 && count != 0)
+        begin
+            count <= count - 1;
+            curr <= resultID;
+        end
+        else if (count == 0)
+        begin
+            curr <= 2'b00;
+        end
+    end 
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module RS (
+  input [n*k-1:0] s,
+  output [n*(n-k)-1:0] c,
+  output [n*k-1:0] e
+);
+
+parameter n = 8; // length of each symbol in bits
+parameter k = 32; // number of input symbols
+parameter t = 2; // number of errors that the code can correct
+
+// Reed-Solomon Encoder
+RS_encoder #(n, k, t) encoder (
+  .s(s),
+  .c(c),
+  .e(e)
+);
+
+// Reed-Solomon Decoder
+RS_decoder #(n, k, t) decoder (
+  .e(e),
+  .c(c),
+  .s(s)
+);
+
+endmodule
+
+module RS_encoder #(
+  parameter n = 8,
+  parameter k = 32,
+  parameter t = 2
+) (
+  input [n*k-1:0] s,
+  output [n*(n-k)-1:0] c,
+  output [n*k-1:0] e
+);
+
+// Implement the Reed-Solomon encoder here
+
+endmodule
+
+module RS_decoder #(
+  parameter n = 8,
+  parameter k = 32,
+  parameter t = 2
+) (
+  input [n*k-1:0] e,
+  input [n*(n-k)-1:0] c,
+  output [n*k-1:0] s
+);
+
+// Implement the Reed-Solomon decoder here
+
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module counter (
+  input clk,
+  input reset,
+  input enable,
+  output reg [7:0] count
+);
+
+  always @(posedge clk) begin
+    if (reset) begin
+      count <= 8'b0;
+    end else if (enable) begin
+      count <= count + 1;
+    end
+  end
+
+endmodule
+```
+

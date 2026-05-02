@@ -1,0 +1,179 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module one0_handler (oh1,control,literal);
+input [13:0] oh1;
+output reg [15:0] literal;
+output reg [25:0] control;
+always @(*) begin
+    case (oh1[13:9])
+        5'b110xx, 5'b111xx: begin 
+            control = {8'b01100000,oh1[10:8],14'b000101};
+            literal = {oh1[7],oh1[7],oh1[7],oh1[7],oh1[7],oh1[7],oh1[7],oh1[7],oh1[7:0]}; 
+        end //brz
+        5'b100xx, 5'b101xx: begin 
+            control = {8'b01100000,oh1[10:8],14'b00010110100000};
+            literal = {4'b0000,oh1[7:0]}; 
+        end
+        5'b01100: begin 
+            control = {8'b01100000,oh1[10:8],14'b00010010000001};
+            literal = {3'b000,oh1[8:0]}; 
+        end
+        5'b01101: begin 
+            control = {11'b01100000000,oh1[10:8],11'b11010000001};
+            literal = {3'b000,oh1[8:0]}; 
+        end
+        5'b00010: begin 
+            control = {5'b00000,oh1[10:8],14'b00000000000110};
+            literal = {3'b000,oh1[8:0]}; 
+        end
+        default: begin
+            control = 26'b0;
+            literal = 16'b0;
+        end
+    endcase
+end
+endmodule
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module five_to_one (
+    input A,
+    input B,
+    input C,
+    input D,
+    input E,
+    output reg Y
+);
+
+always @(*) begin
+    if (A) begin
+        Y = 1;
+    end else if (B) begin
+        Y = 1;
+    end else if (C) begin
+        Y = 1;
+    end else if (D && !E) begin
+        Y = 1;
+    end else if (!D && E) begin
+        Y = 1;
+    end else begin
+        Y = 0;
+    end
+end
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module bitwise_rotation(
+    input [25:0] Data_i,
+    input select_i,
+    input bit_shift_i,
+    input clk,
+    output reg [25:0] Data_o
+);
+
+reg [25:0] temp;
+
+always @(posedge clk) begin
+    if (select_i == 0) begin
+        temp[25:1] = Data_i[24:0];
+        temp[0] = Data_i[25];
+    end else begin
+        temp[24:0] = Data_i[25:1];
+        temp[25] = Data_i[0];
+    end
+
+    if (bit_shift_i == 0) begin
+        Data_o <= temp;
+    end else begin
+        if (select_i == 0) begin
+            Data_o[25] <= temp[0];
+            Data_o[24:0] <= temp[25:1];
+        end else begin
+            Data_o[0] <= temp[25];
+            Data_o[25:1] <= temp[24:0];
+        end
+    end
+end
+
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module data_storage(
+  input CLOCKENABLE,
+  input DOUT0,
+  input DOUT1,
+  input INPUTCLK,
+  input LATCHINPUTVALUE,
+  input OUTPUTCLK,
+  input OUTPUTENABLE,
+  output reg DIN0,
+  output reg DIN1
+);
+
+  reg [1:0] data;
+
+  always @(posedge CLOCKENABLE) begin
+    if (DOUT0 && DOUT1) begin
+      data <= {DOUT1, DOUT0};
+    end
+  end
+
+  always @(posedge INPUTCLK) begin
+    if (LATCHINPUTVALUE) begin
+      DIN0 <= data[0];
+      DIN1 <= data[1];
+    end
+  end
+
+  always @(posedge OUTPUTCLK) begin
+    if (OUTPUTENABLE) begin
+      DIN0 <= data[0];
+      DIN1 <= data[1];
+    end
+  end
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module mux4 (
+    input A0,
+    input A1,
+    input A2,
+    input A3,
+    input S0,
+    input S1,
+    output reg X
+);
+
+    // Voltage supply signals
+    supply1 VPWR;
+    supply0 VGND;
+    supply1 VPB ;
+    supply0 VNB ;
+
+    always @*
+    begin
+        case ({S1, S0})
+            2'b00: X = A0;
+            2'b01: X = A1;
+            2'b10: X = A2;
+            2'b11: X = A3;
+        endcase
+    end
+
+endmodule
+```
+

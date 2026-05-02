@@ -1,0 +1,167 @@
+MODULE 1:
+Topic: memory
+```verilog
+module can_crc (clk, data, enable, initialize, crc);
+
+parameter Tp = 1;
+
+input         clk;
+input         data;
+input         enable;
+input         initialize;
+
+output [14:0] crc;
+
+reg    [14:0] crc;
+
+wire          crc_next;
+wire   [14:0] crc_tmp;
+
+assign crc_next = data ^ crc[14];
+assign crc_tmp = {crc[13:0], 1'b0};
+
+always @ (posedge clk)
+begin
+  if(initialize)
+    crc <= #Tp 15'h0;
+  else if (enable)
+    begin
+      if (crc_next)
+        crc <= #Tp crc_tmp ^ 15'h4599;
+      else
+        crc <= #Tp crc_tmp;
+    end    
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module SchmittTrigger (
+  input in,
+  input VTHplus,
+  input VTHminus,
+  output out
+);
+
+  reg out_reg;
+  reg prev_out_reg;
+  
+  always @ (in or VTHplus or VTHminus or prev_out_reg) begin
+    if (in > VTHplus) begin
+      out_reg <= 1;
+    end else if (in < VTHminus) begin
+      out_reg <= 0;
+    end else begin
+      out_reg <= prev_out_reg;
+    end
+  end
+  
+  assign out = out_reg;
+  
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module PLL (
+  input ref_clk,
+  input reset,
+  input enable,
+  output locked_clk
+);
+
+parameter N = 2; // multiplication factor
+parameter M = 1; // division factor
+
+// Phase detector
+reg pd_out;
+always @(posedge ref_clk or posedge locked_clk) begin
+  pd_out <= ref_clk ^ locked_clk;
+end
+
+// Charge pump
+reg [1:0] cp_out;
+always @(posedge pd_out) begin
+  if (pd_out) begin
+    cp_out <= cp_out + 2'b01;
+  end else begin
+    cp_out <= cp_out - 2'b01;
+  end
+end
+
+// Loop filter
+reg [7:0] lf_out;
+always @(posedge ref_clk) begin
+  lf_out <= lf_out + cp_out;
+end
+
+// Voltage-controlled oscillator (VCO)
+reg [7:0] vco_count;
+always @(posedge ref_clk) begin
+  if (enable) begin
+    vco_count <= vco_count + lf_out;
+  end else begin
+    vco_count <= 8'h00;
+  end
+end
+
+// Locked clock output
+assign locked_clk = vco_count[7:0] == 8'h00 ? 1'b1 : 1'b0;
+
+// Reset logic
+always @(posedge ref_clk) begin
+  if (reset) begin
+    cp_out <= 2'b00;
+    lf_out <= 8'h00;
+    vco_count <= 8'h00;
+  end
+end
+
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+
+module RefModule (
+  input clk,
+  input reset,
+  output reg [9:0] q
+);
+
+  always @(posedge clk)
+    if (reset || q == 999)
+      q <= 0;
+    else
+      q <= q+1;
+
+endmodule
+
+
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module binary_counter (
+    input clk,
+    input reset,
+    output reg [3:0] Q
+);
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            Q <= 4'b0000;
+        end else begin
+            Q <= Q + 1;
+        end
+    end
+
+endmodule
+```
+

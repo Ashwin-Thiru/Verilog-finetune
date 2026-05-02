@@ -1,0 +1,267 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module synchronous_counter (
+    input clk,
+    input reset,
+    output reg [3:0] count
+);
+
+always @(posedge clk) begin
+    if (reset) begin
+        count <= 4'b0000;
+    end
+    else begin
+        count <= count + 1;
+    end
+end
+
+endmodule
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module top();
+
+    // Inputs are registered
+    reg D;
+    reg RESET;
+
+    // Outputs are wires
+    wire Q;
+
+    initial
+    begin
+        // Initial state is x for all inputs.
+        D     = 1'bX;
+        RESET = 1'bX;
+
+        #20   D     = 1'b0;
+        #40   RESET = 1'b0;
+        #60   D     = 1'b1;
+        #80   RESET = 1'b1;
+        #100  D     = 1'b0;
+        #120  RESET = 1'b0;
+        #140  RESET = 1'b1;
+        #160  D     = 1'b1;
+        #180  RESET = 1'bx;
+        #200  D     = 1'bx;
+    end
+
+    // Create a clock
+    reg CLK;
+    initial
+    begin
+        CLK = 1'b0;
+    end
+
+    always
+    begin
+        #5 CLK = ~CLK;
+    end
+
+    sky130_fd_sc_ls__udp_dff$PR dut (.D(D), .RESET(RESET), .Q(Q), .CLK(CLK));
+
+endmodule
+
+module sky130_fd_sc_ls__udp_dff$PR (
+    input D,
+    input RESET,
+    output Q,
+    input CLK
+);
+
+    reg Q_reg;
+
+    always @(posedge CLK or negedge RESET)
+    begin
+        if (~RESET) begin
+            Q_reg <= 1'b0;
+        end
+        else begin
+            Q_reg <= D;
+        end
+    end
+
+    assign Q = Q_reg;
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module ALU (
+    input [31:0] in1, in2, 
+    input [5:0] ALUFun,
+    input sign, 
+    output reg [31:0] out
+);
+    reg zero, overflow; 
+    wire negative;
+    reg [31:0] out00, out01, out10, out11;
+    reg nega;
+
+    assign negative = sign&nega;
+
+    always @ (*) begin
+        case (ALUFun[0])
+            1'b0: begin
+                out00 = in1 + in2;
+                zero = (out00 == 1'b0)? 1'b1 : 1'b0;
+                overflow = (sign&(in1[31]&in2[31]) ^ (in1[30]&in2[30])) | (~sign&(in1[31]&in2[31]));
+                nega = out00[31];
+            end
+            1'b1: begin
+                out00 = in1 + ~in2 + 32'b1;
+                zero = (out00 == 1'b0)? 1'b1 : 1'b0;
+                overflow = (sign&(in1[31]&in2[31]) ^ (in1[30]&in2[30])) | (~sign&(in1[31]&in2[31]));
+                nega = out00[31];
+            end
+            default : out00 = 32'b0;
+        endcase
+        case (ALUFun[3:1])
+            3'b001: out11 = zero ? 32'b1 : 32'b0;
+            3'b000: out11 = zero ? 32'b0 : 32'b1;
+            3'b010: out11 = nega ? 32'b1 : 32'b0;
+            3'b110: out11 = (nega|zero) ? 32'b1 : 32'b0; // blez
+            3'b100: out11 = (~in1[31]) ? 32'b1 : 32'b0; // bgez
+            3'b111: out11 = (~in1[31]&~zero) ? 32'b1 : 32'b0; // bgtz
+            default : out11 = 32'b0;
+        endcase
+        case (ALUFun[3:0])
+            4'b1000: out01 = in1 & in2;
+            4'b1110: out01 = in1 | in2;
+            4'b0110: out01 = in1 ^ in2;
+            4'b0001: out01 = ~(in1 | in2);
+            4'b1010: out01 = in1;
+            default : out01 = 32'b0;
+        endcase
+        case (ALUFun[1:0])
+            2'b00: begin                            // sll
+                        out10 = in2;
+                        if (in1[4]) out10 = out10<<16;
+                        if (in1[3]) out10 = out10<<8;
+                        if (in1[2]) out10 = out10<<4;
+                        if (in1[1]) out10 = out10<<2;
+                        if (in1[0]) out10 = out10<<1;
+                    end
+            2'b01: begin                            // srl
+                        out10 = in2;
+                        if (in1[4]) out10 = out10>>16;
+                        if (in1[3]) out10 = out10>>8;
+                        if (in1[2]) out10 = out10>>4;
+                        if (in1[1]) out10 = out10>>2;
+                        if (in1[0]) out10 = out10>>1;
+                    end
+            2'b11: begin                            // sra
+                        out10 = in2;
+                        if (in1[4]) out10 = (out10>>16) | {{16{in2[31]}},{16{1'b0}}};
+                        if (in1[3]) out10 = ((out10>>8) | {{8{in2[31]}},{24{1'b0}}});
+                        if (in1[2]) out10 = (out10>>4) | {{4{in2[31]}},{28{1'b0}}};
+                        if (in1[1]) out10 = (out10>>2) | {{2{in2[31]}},{30{1'b0}}};
+                        if (in1[0]) out10 = (out10>>1) | {{1{in2[31]}},{31{1'b0}}};
+                    end
+            default : out10 = 32'b0;
+        endcase
+        case(ALUFun[5:4])
+            2'b00: out = out00;
+            2'b01: out = out01;
+            2'b10: out = out10;
+            2'b11: out = out11;
+            default: out<= 32'b0;
+        endcase
+    end
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module d_ff_async_rst_set(clk, rst, set, d, q, qn);
+input clk, rst, set, d;
+output q, qn;
+reg q, qn;
+
+always @(posedge clk or posedge rst or posedge set) begin
+    if (rst) begin
+        q <= 0;
+        qn <= 1;
+    end
+    else if (set) begin
+        q <= 1;
+        qn <= 0;
+    end
+    else begin
+        q <= d;
+        qn <= ~d;
+    end
+end
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module up_down_counter_decoder (
+    input CLK,
+    input LOAD,
+    input UP,
+    input DOWN,
+    input [7:0] input_data,
+    output reg [15:0] output_data
+);
+
+reg [3:0] counter;
+
+always @(posedge CLK) begin
+    if (LOAD) begin
+        counter <= input_data[3:0];
+    end else if (UP) begin
+        counter <= counter + 1;
+    end else if (DOWN) begin
+        counter <= counter - 1;
+    end else begin
+        counter <= 4'b0;
+    end
+end
+
+reg [15:0] decoder_output;
+
+always @(*) begin
+    case (counter)
+        4'b0000: decoder_output = 16'b0000000000000001;
+        4'b0001: decoder_output = 16'b0000000000000010;
+        4'b0010: decoder_output = 16'b0000000000000100;
+        4'b0011: decoder_output = 16'b0000000000001000;
+        4'b0100: decoder_output = 16'b0000000000010000;
+        4'b0101: decoder_output = 16'b0000000000100000;
+        4'b0110: decoder_output = 16'b0000000001000000;
+        4'b0111: decoder_output = 16'b0000000010000000;
+        4'b1000: decoder_output = 16'b0000000100000000;
+        4'b1001: decoder_output = 16'b0000001000000000;
+        4'b1010: decoder_output = 16'b0000010000000000;
+        4'b1011: decoder_output = 16'b0000100000000000;
+        4'b1100: decoder_output = 16'b0001000000000000;
+        4'b1101: decoder_output = 16'b0010000000000000;
+        4'b1110: decoder_output = 16'b0100000000000000;
+        4'b1111: decoder_output = 16'b1000000000000000;
+        default: decoder_output = 16'b0000000000000000;
+    endcase
+end
+
+reg [7:0] or_input = 8'b0;
+
+always @(posedge CLK) begin
+    or_input <= input_data;
+end
+
+always @(*) begin
+    output_data = decoder_output | or_input;
+end
+
+endmodule
+```
+

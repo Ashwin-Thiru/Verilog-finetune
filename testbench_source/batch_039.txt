@@ -1,0 +1,385 @@
+MODULE 1:
+Topic: memory
+```verilog
+module gray_to_bcd(
+    input clk,
+    input reset,
+    output reg [15:0] bcd_output
+);
+
+    reg [3:0] gray_code;
+    reg [3:0] bcd_digit;
+    
+    always @(posedge clk) begin
+        if (reset) begin
+            gray_code <= 4'b0000;
+            bcd_digit <= 4'b0000;
+            bcd_output <= 16'b0000000000000000;
+        end else begin
+            gray_code <= gray_code + 1;
+            if (gray_code == 4'b1000) begin
+                gray_code <= 4'b0000;
+                bcd_digit <= bcd_digit + 1;
+                if (bcd_digit == 4'b1010) begin
+                    bcd_digit <= 4'b0000;
+                end
+            end
+            bcd_output <= {bcd_output[11:0], bcd_digit, gray_code};
+        end
+    end
+endmodule
+
+module binary_to_output(
+    input [2:0] binary_input,
+    output reg out_0,
+    output reg out_1,
+    output reg out_2
+);
+
+    always @(*) begin
+        case (binary_input)
+            3'b000: begin
+                out_0 = 1'b0;
+                out_1 = 1'b0;
+                out_2 = 1'b0;
+            end
+            3'b001: begin
+                out_0 = 1'b1;
+                out_1 = 1'b0;
+                out_2 = 1'b0;
+            end
+            3'b010: begin
+                out_0 = 1'b0;
+                out_1 = 1'b1;
+                out_2 = 1'b0;
+            end
+            3'b011: begin
+                out_0 = 1'b1;
+                out_1 = 1'b1;
+                out_2 = 1'b0;
+            end
+            3'b100: begin
+                out_0 = 1'b0;
+                out_1 = 1'b0;
+                out_2 = 1'b1;
+            end
+            3'b101: begin
+                out_0 = 1'b1;
+                out_1 = 1'b0;
+                out_2 = 1'b1;
+            end
+            3'b110: begin
+                out_0 = 1'b0;
+                out_1 = 1'b1;
+                out_2 = 1'b1;
+            end
+            3'b111: begin
+                out_0 = 1'b1;
+                out_1 = 1'b1;
+                out_2 = 1'b1;
+            end
+        endcase
+    end
+endmodule
+
+module functional_module(
+    input [3:0] bcd_input,
+    input [2:0] binary_input,
+    output reg [7:0] sum_output
+);
+
+    always @(*) begin
+        case (bcd_input)
+            4'b0000: sum_output = 8'b00000000;
+            4'b0001: sum_output = {1'b0, 1'b0, 1'b0, binary_input, 1'b0, 1'b0, 1'b0, 1'b0};
+            4'b0010: sum_output = {1'b0, 1'b0, 1'b0, binary_input, 1'b0, 1'b0, 1'b0, 1'b1};
+            4'b0011: sum_output = {1'b0, 1'b0, 1'b0, binary_input, 1'b0, 1'b0, 1'b1, 1'b0};
+            4'b0100: sum_output = {1'b0, 1'b0, 1'b0, binary_input, 1'b0, 1'b0, 1'b1, 1'b1};
+            4'b0101: sum_output = {1'b0, 1'b0, 1'b0, binary_input, 1'b0, 1'b1, 1'b0, 1'b0};
+            4'b0110: sum_output = {1'b0, 1'b0, 1'b0, binary_input, 1'b0, 1'b1, 1'b0, 1'b1};
+            4'b0111: sum_output = {1'b0, 1'b0, 1'b0, binary_input, 1'b0, 1'b1, 1'b1, 1'b0};
+            4'b1000: sum_output = {1'b0, 1'b0, 1'b0, binary_input, 1'b0, 1'b1, 1'b1, 1'b1};
+            4'b1001: sum_output = {1'b0, 1'b0, 1'b1, binary_input, 1'b0, 1'b0, 1'b0, 1'b0};
+            4'b1010: sum_output = {1'b0, 1'b0, 1'b1, binary_input, 1'b0, 1'b0, 1'b0, 1'b1};
+            4'b1011: sum_output = {1'b0, 1'b0, 1'b1, binary_input, 1'b0, 1'b0, 1'b1, 1'b0};
+            4'b1100: sum_output = {1'b0, 1'b0, 1'b1, binary_input, 1'b0, 1'b0, 1'b1, 1'b1};
+            4'b1101: sum_output = {1'b0, 1'b0, 1'b1, binary_input, 1'b0, 1'b1, 1'b0, 1'b0};
+            4'b1110: sum_output = {1'b0, 1'b0, 1'b1, binary_input, 1'b0, 1'b1, 1'b0, 1'b1};
+            4'b1111: sum_output = {1'b0, 1'b0, 1'b1, binary_input, 1'b0, 1'b1, 1'b1, 1'b0};
+            default: sum_output = 8'b00000000;
+        endcase
+    end
+endmodule
+
+module top_module (
+    input clk,
+    input reset,
+    input [15:0] gray_code_bcd_output,
+    input [2:0] binary_input,
+    output [7:0] final_output
+);
+
+    wire [3:0] bcd_input;
+    wire out_0, out_1, out_2;
+    
+    gray_to_bcd gray_to_bcd_inst (
+        .clk(clk),
+        .reset(reset),
+        .bcd_output(gray_code_bcd_output)
+    );
+    
+    binary_to_output binary_to_output_inst (
+        .binary_input(binary_input),
+        .out_0(out_0),
+        .out_1(out_1),
+        .out_2(out_2)
+    );
+    
+    functional_module functional_module_inst (
+        .bcd_input(bcd_input),
+        .binary_input(binary_input),
+        .sum_output(final_output)
+    );
+    
+    assign bcd_input = gray_code_bcd_output[15:12];
+    
+    assign final_output[0] = out_0;
+    assign final_output[1] = out_1;
+    assign final_output[2] = out_2;
+    
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module forwarding_unit
+#(
+   parameter DATA_WIDTH = 32,
+   parameter REG_ADDR_WIDTH = 5
+ )
+ (
+   input [DATA_WIDTH-1:0] data_alu_a_in,
+   input [DATA_WIDTH-1:0] data_alu_b_in,
+   input [REG_ADDR_WIDTH-1:0] addr_alu_a_in,
+   input [REG_ADDR_WIDTH-1:0] addr_alu_b_in,
+   input [DATA_WIDTH-1:0] ex_mem_reg_a_data_in,
+   input [DATA_WIDTH-1:0] ex_mem_reg_b_data_in,
+   input [REG_ADDR_WIDTH-1:0] ex_mem_reg_a_addr_in,
+   input [REG_ADDR_WIDTH-1:0] ex_mem_reg_b_addr_in,
+   input ex_mem_reg_a_wr_ena_in,
+   input ex_mem_reg_b_wr_ena_in,
+   input [DATA_WIDTH-1:0] wb_reg_a_data_in,
+   input [DATA_WIDTH-1:0] wb_reg_b_data_in,
+   input [REG_ADDR_WIDTH-1:0] wb_reg_a_addr_in,
+   input [REG_ADDR_WIDTH-1:0] wb_reg_b_addr_in,
+   input wb_reg_a_wr_ena_in,
+   input wb_reg_b_wr_ena_in,
+      
+   output reg [DATA_WIDTH-1:0] alu_a_mux_sel_out,
+   output reg [DATA_WIDTH-1:0] alu_b_mux_sel_out
+);
+
+   // Port-A ALU input
+   always@(*)begin
+      // Forwarding data from MEM -> EXE
+      if((addr_alu_a_in == ex_mem_reg_a_addr_in) & ex_mem_reg_a_wr_ena_in)begin
+         alu_a_mux_sel_out <= ex_mem_reg_a_data_in;
+      end
+      else if((addr_alu_a_in == ex_mem_reg_b_addr_in) & ex_mem_reg_b_wr_ena_in)begin
+         alu_a_mux_sel_out <= ex_mem_reg_b_data_in;
+      end
+      // Forwarding data from WB -> EXE
+      else if((addr_alu_a_in == wb_reg_a_addr_in) & wb_reg_a_wr_ena_in)begin
+         alu_a_mux_sel_out <= wb_reg_a_data_in;
+      end
+      else  if((addr_alu_a_in == wb_reg_b_addr_in) & wb_reg_b_wr_ena_in)begin
+         alu_a_mux_sel_out <= wb_reg_b_data_in;
+      end
+      // No forwarding
+      else begin
+         alu_a_mux_sel_out <= data_alu_a_in;
+      end
+   end
+
+
+   // Port-B ALU input
+   always@(*)begin
+      // Forwarding data from MEM -> EXE
+      if((addr_alu_b_in == ex_mem_reg_a_addr_in) & ex_mem_reg_a_wr_ena_in)begin
+         alu_b_mux_sel_out <= ex_mem_reg_a_data_in;
+      end
+      else if((addr_alu_b_in == ex_mem_reg_b_addr_in) & ex_mem_reg_b_wr_ena_in)begin
+         alu_b_mux_sel_out <= ex_mem_reg_b_data_in;
+      end
+      // Forwarding data from WB -> EXE
+      else if((addr_alu_b_in == wb_reg_a_addr_in) & wb_reg_a_wr_ena_in)begin
+         alu_b_mux_sel_out <= wb_reg_a_data_in;
+      end
+      else if((addr_alu_b_in == wb_reg_b_addr_in) & wb_reg_b_wr_ena_in)begin
+         alu_b_mux_sel_out <= wb_reg_b_data_in;
+      end
+      // No forwarding
+      else begin
+         alu_b_mux_sel_out <= data_alu_b_in;
+      end
+   end
+
+
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module cpu_ctl(op, func, equal_result, JR, J, JAL, LW, WREG, WMEM, RDorRT, SE, SA, IR, IorR, BJ, Aluc);
+
+input wire [5:0] op, func;
+input wire equal_result;
+output wire JR, J, JAL, LW, WREG, WMEM, RDorRT, SE, SA, IR, IorR, BJ;
+output wire [4:0] Aluc;
+
+wire r_type, i_jr, i_sll, i_srl, i_sra;
+wire i_addi, i_andi, i_ori, i_xori, i_slti, i_lw, i_sw;
+wire i_j, i_jal, i_beq, i_bne;
+wire i_type, b_type;
+
+/* R-type */
+and(r_type, ~op[5], ~op[4], ~op[3], ~op[2], ~op[1], ~op[0]);
+and(i_jr, r_type, ~func[5], ~func[4], func[3], ~func[2], ~func[1], ~func[0]); //func:001000
+and(i_sll, r_type, ~func[5], ~func[4], ~func[3], ~func[2], ~func[1], ~func[0]); //func:000000
+and(i_srl, r_type, ~func[5], ~func[4], ~func[3], ~func[2], func[1], ~func[0]); //func:000010
+and(i_sra, r_type, ~func[5], ~func[4], ~func[3], ~func[2], func[1], func[0]); //func:000011
+
+/* I-type */
+or(i_type, i_addi, i_andi, i_ori, i_xori, i_slti, b_type, i_lw, i_sw);
+and(i_addi, ~op[5], ~op[4], op[3], ~op[2], ~op[1], ~op[0]);
+and(i_andi, ~op[5], ~op[4], op[3], op[2], ~op[1], ~op[0]);
+and(i_ori, ~op[5], ~op[4], op[3], op[2], ~op[1], op[0]);
+and(i_xori, ~op[5], ~op[4], op[3], op[2], op[1], ~op[0]);
+and(i_slti, ~op[5], ~op[4], op[3], ~op[2], op[1], ~op[0]);
+and(i_lw, op[5], ~op[4], ~op[3], ~op[2], op[1], op[0]);
+and(i_sw, op[5], ~op[4], op[3], ~op[2], op[1], op[0]);
+
+/* I-type(B) */
+or(b_type, i_beq, i_bne);
+and(i_beq, ~op[5], ~op[4], ~op[3], op[2], ~op[1], ~op[0]); //000100
+and(i_bne, ~op[5], ~op[4], ~op[3], op[2], ~op[1], op[0]); //000101
+
+/* J-type */
+and(i_j, ~op[5], ~op[4], ~op[3], ~op[2], op[1], ~op[0]);
+and(i_jal, ~op[5], ~op[4], ~op[3], ~op[2], op[1], op[0]);
+
+/* Control Signals */
+assign JR = i_jr;
+assign J = i_j;
+assign JAL = i_jal;
+assign LW = i_lw;
+assign WREG = i_jal | IorR | LW;
+assign WMEM = i_sw;
+assign RDorRT = r_type & ~i_jr;
+assign SE = i_addi | i_lw | i_sw;
+assign SA = i_sll | i_srl | i_sra;
+assign IR = (r_type | i_type) & ~i_jr & ~b_type & ~i_lw & ~i_sw;
+assign IorR = i_type & ~b_type;
+assign BJ = (i_beq & equal_result) | (i_bne & ~equal_result);
+
+/* ALU Control */
+alt_ctl AC(.op(op), .func(func), .aluc(Aluc));
+
+endmodule
+
+module alt_ctl(op, func, aluc);
+
+input wire [5:0] op, func;
+output wire [4:0] aluc;
+
+wire r_type, i_type, b_type;
+
+/* R-type */
+and(r_type, ~op[5], ~op[4], ~op[3], ~op[2], ~op[1], ~op[0]);
+assign aluc[4:0] = r_type ? func[2:0] : i_type ? 2'b00 : b_type ? 2'b01 : 2'b10;
+
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module alu_p #(parameter WIDTH=8)
+	(output reg [WIDTH:0] out, c_out,
+		input [WIDTH-1:0] a, b, 
+		input c_in, 
+		input [2:0]op);
+	parameter [2:0]
+		OP_ADD  = 3'b000,
+		OP_SUB  = 3'b001,
+		OP_SUBB = 3'b010,
+		OP_OR   = 3'b011,
+		OP_AND  = 3'b100,
+		OP_NOT  = 3'b101,
+		OP_XOR  = 3'b110,
+		OP_XNOR = 3'b111;
+
+	always @(a, b, op, c_in)
+		case (op)
+			OP_ADD: 
+                begin 
+                    {c_out, out} <= a + b + c_in;
+                end
+			OP_SUB: 
+                begin 
+                    {c_out, out} <= a - b - ~c_in;
+                end
+			OP_SUBB:
+                begin 
+                    {c_out, out} <= b - a - ~c_in;
+                end
+			OP_OR:  
+                begin 
+                    {c_out, out} <= {1'b0, a | b};
+                end
+			OP_AND: 
+                begin 
+                    {c_out, out} <= {1'b0, a & b};
+                end
+			OP_NOT: 
+                begin 
+                    {c_out, out} <= {1'b0, (~a) & b};
+                end
+			OP_XOR: 
+                begin 
+                    {c_out, out} <= {1'b0, a ^ b};
+                end
+			OP_XNOR:
+                begin 
+                    {c_out, out} <= {1'b0, ~(a ^ b)};
+                end
+		endcase
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module audio_codec (
+  input [n-1:0] in,
+  output [m-1:0] out
+);
+
+parameter n = 16; // number of input signals, which represents the audio data
+parameter m = 16; // number of output signals, which represents the encoded or decoded audio data
+parameter audio_format = "AAC"; // the audio format to be used (MP3, AAC, or WMA)
+
+// Verilog code to define the encoding or decoding algorithm for the selected format
+// ...
+
+// Connect the inputs to the encoding or decoding circuitry, which will generate the output signals
+// ...
+
+// Use the output signals to represent the encoded or decoded audio data in the selected format
+// ...
+
+endmodule
+```
+

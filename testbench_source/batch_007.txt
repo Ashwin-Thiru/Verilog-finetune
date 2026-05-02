@@ -1,0 +1,332 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module fsm_3bit_counter (
+  input clk,
+  input reset,
+  input [2:0] counter,
+  output reg [2:0] next_counter
+);
+
+reg [2:0] state, next_state;
+
+always @ (counter) begin
+  case (counter)
+    3'h0: next_state = 3'h1;
+    3'h1: next_state = 3'h2;
+    3'h2: next_state = 3'h3;
+    3'h3: next_state = 3'h0;
+  endcase
+end
+
+always @ (posedge clk) begin
+  if (reset) begin
+    next_counter <= 3'h0;
+    state <= 3'h0;
+  end else begin
+    next_counter <= next_state;
+    state <= next_state;
+  end
+end
+
+endmodule
+
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module uart_receiver (
+  input clk,
+  input rst_n,
+  input rx,
+  output reg clear_to_send_out,
+  output reg [7:0] rx_byte_out,
+  output reg rx_byte_valid_out,
+  output reg rx_byte_done
+);
+
+  // Constants
+  localparam BAUD_RATE = 9600;
+  localparam CLOCK_FREQ = 50000000; // Assume 50 MHz clock
+
+  // Internal signals
+  reg [2:0] state;
+  reg [7:0] data_bits;
+  reg [3:0] bit_count;
+  reg sample;
+  reg sample_count;
+  reg rx_byte_valid_next;
+
+  // Calculate the number of clock cycles per bit
+  localparam CYCLES_PER_BIT = CLOCK_FREQ / BAUD_RATE;
+
+  // State machine states
+  localparam IDLE = 3'b000;
+  localparam START_BIT = 3'b001;
+  localparam DATA_BITS = 3'b010;
+  localparam STOP_BIT = 3'b011;
+
+  always @(posedge clk) begin
+    if (!rst_n) begin
+      state <= IDLE;
+      clear_to_send_out <= 1;
+      bit_count <= 0;
+      sample_count <= 0;
+      rx_byte_done <= 0;
+      rx_byte_valid_out <= 0;
+      rx_byte_valid_next <= 0;
+    end
+    else begin
+      case (state)
+        IDLE: begin
+          if (!rx) begin
+            state <= START_BIT;
+            bit_count <= 0;
+            sample_count <= 0;
+            data_bits <= 0;
+            clear_to_send_out <= 0;
+          end
+        end
+        START_BIT: begin
+          if (sample_count >= CYCLES_PER_BIT) begin
+            sample_count <= 0;
+            bit_count <= bit_count + 1;
+            data_bits[bit_count] <= sample;
+            if (bit_count == 7) begin
+              state <= STOP_BIT;
+            end
+            else begin
+              state <= DATA_BITS;
+            end
+          end
+          else begin
+            sample_count <= sample_count + 1;
+            sample <= rx;
+          end
+        end
+        DATA_BITS: begin
+          if (sample_count >= CYCLES_PER_BIT) begin
+            sample_count <= 0;
+            bit_count <= bit_count + 1;
+            data_bits[bit_count] <= sample;
+            if (bit_count == 7) begin
+              state <= STOP_BIT;
+            end
+          end
+          else begin
+            sample_count <= sample_count + 1;
+            sample <= rx;
+          end
+        end
+        STOP_BIT: begin
+          if (sample_count >= CYCLES_PER_BIT) begin
+            sample_count <= 0;
+            if (rx) begin
+              rx_byte_out <= data_bits;
+              rx_byte_valid_next <= 1;
+            end
+            state <= IDLE;
+            clear_to_send_out <= 1;
+            rx_byte_done <= 1;
+          end
+          else begin
+            sample_count <= sample_count + 1;
+          end
+        end
+        default: begin
+          state <= IDLE;
+          clear_to_send_out <= 1;
+          bit_count <= 0;
+          sample_count <= 0;
+          rx_byte_valid_out <= 0;
+          rx_byte_valid_next <= 0;
+          rx_byte_done <= 0;
+        end
+      endcase
+    end
+  end
+
+  always @(posedge clk) begin
+    if (!rst_n) begin
+      rx_byte_valid_out <= 0;
+    end
+    else begin
+      rx_byte_valid_out <= rx_byte_valid_next;
+    end
+  end
+
+endmodule
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+module traffic_light_controller (
+  input clk,
+  input reset,
+  input [1:0] state,
+  output reg red,
+  output reg green,
+  output reg yellow
+);
+
+reg [1:0] current_state;
+reg [25:0] counter;
+
+parameter RED_TIME = 25'd500000; // 5 seconds
+parameter RED_YELLOW_TIME = 25'd125000; // 1.25 seconds
+parameter GREEN_TIME = 25'd750000; // 7.5 seconds
+parameter YELLOW_TIME = 25'd125000; // 1.25 seconds
+
+always @(posedge clk) begin
+  if (reset) begin
+    current_state <= 2'b00; // start with red light
+    counter <= RED_TIME;
+  end else begin
+    case (current_state)
+      2'b00: begin // red
+        if (counter == 0) begin
+          current_state <= 2'b01;
+          counter <= RED_YELLOW_TIME;
+        end else begin
+          counter <= counter - 1;
+        end
+      end
+      2'b01: begin // red-yellow
+        if (counter == 0) begin
+          current_state <= 2'b10;
+          counter <= GREEN_TIME;
+        end else begin
+          counter <= counter - 1;
+        end
+      end
+      2'b10: begin // green
+        if (counter == 0) begin
+          current_state <= 2'b11;
+          counter <= YELLOW_TIME;
+        end else begin
+          counter <= counter - 1;
+        end
+      end
+      2'b11: begin // yellow
+        if (counter == 0) begin
+          current_state <= 2'b00;
+          counter <= RED_TIME;
+        end else begin
+          counter <= counter - 1;
+        end
+      end
+    endcase
+  end
+end
+
+always @(posedge clk) begin
+  case (current_state)
+    2'b00: begin // red
+      red <= 1;
+      green <= 0;
+      yellow <= 0;
+    end
+    2'b01: begin // red-yellow
+      red <= 1;
+      green <= 0;
+      yellow <= 1;
+    end
+    2'b10: begin // green
+      red <= 0;
+      green <= 1;
+      yellow <= 0;
+    end
+    2'b11: begin // yellow
+      red <= 0;
+      green <= 0;
+      yellow <= 1;
+    end
+  endcase
+end
+
+endmodule
+
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module mealy_3state_sequence_detection (
+  input clk,
+  input reset,
+  input i,
+  output reg out
+);
+
+  parameter STATE_A = 2'b00;
+  parameter STATE_B = 2'b01;
+  parameter STATE_C = 2'b10;
+
+  reg [1:0] state, next_state;
+
+  always @(posedge clk) begin
+    if (reset) begin
+      state <= STATE_A;
+      out <= 1'b0;
+    end
+    else begin
+      state <= next_state;
+      out <= (state == STATE_C) ? 1'b1 : 1'b0;
+    end
+  end
+
+  always @(*) begin
+    case (state)
+      STATE_A: begin
+        if (i) next_state = STATE_B;
+        else next_state = STATE_A;
+      end
+      STATE_B: begin
+        if (i) next_state = STATE_C;
+        else next_state = STATE_A;
+      end
+      STATE_C: begin
+        if (i) next_state = STATE_B;
+        else next_state = STATE_A;
+      end
+    endcase
+  end
+
+endmodule
+
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module exercise_8_10 (output reg [1:0] state, input x, y, Clk);
+    initial state = 2'b00;
+    always @ (posedge Clk) begin
+        case ({x,y})
+            2'b00: begin if (state == 2'b00) state <= state; 
+                else if (state == 2'b01) state <= 2'b10; 
+                else if (state == 2'b10) state <= 2'b00; 
+                else state <= 2'b10;
+                end
+            2'b01: begin if (state == 2'b00) state <= state;
+                    else if (state == 2'b01) state <= 2'b11;
+                    else if (state == 2'b10) state <= 2'b00;
+                    else state <= state;
+                    end
+            2'b10: begin if (state == 2'b00) state <= 2'b01;
+                    else if (state == 2'b01) state <= 2'b10;
+                    else if (state == 2'b10) state <= state;
+                    else state <= 2'b00;
+                    end
+            2'b11: begin if (state == 2'b00) state <= 2'b01;
+                    else if (state == 2'b01) state <= 2'b11;
+                    else if (state == 2'b10) state <= 2'b11;
+                    else state <= 2'b00;
+                    end
+        endcase
+    end
+endmodule
+```
+

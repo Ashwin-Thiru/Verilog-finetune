@@ -1,0 +1,16 @@
+# Datasets
+raw_datasets/
+filtered/
+final_dataset/
+synthetic/
+# Model Checkpoints & Exports
+checkpoints/
+verilog-agent-llama31-4bit-final/
+# Virtual Environment & Cache
+venv/
+unsloth_compiled_cache/
+__pycache__/
+# Logs and Outputs
+logs/
+testbench_responses/
+*.log

@@ -1,0 +1,220 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module number_in(
+    input [31:0] num_a,
+    input [31:0] num_b,
+    input [31:0] result,
+    input [4:0] code,
+    input btnm,
+    output reg [32:0] num_out
+);
+
+    reg [31:0] new;
+    reg [6:0] i;
+    reg [1:0] state;
+    reg b_state;
+
+    parameter [1:0] numA = 2'b00;
+    parameter [1:0] numB = 2'b01;
+    parameter [1:0] numC = 2'b10;
+
+    initial state = 2'b00;
+    initial b_state = 0;
+
+    always @(*) begin
+        if (btnm) begin
+            if (~b_state) begin
+                b_state = 1;
+                case (state)
+                    numA: if (code > 9 && code < 15) state = numB;
+                    numB: if (code == 15) state = numC;
+                    numC: if (code == 16) state = numA;
+                    default: state = numA;
+                endcase
+            end
+        end else begin
+            b_state = 0;
+        end
+    end
+
+    always @(state) begin
+        case (state)
+            numA: new = num_a;
+            numB: new = num_b;
+            numC: new = result;
+            default: new = num_a;
+        endcase
+        if (new[31]) begin
+            for (i = 0; i < 32; i = i + 1) begin
+                num_out[i] = ~new[i];
+            end
+            num_out = num_out + 1'b1;
+            num_out[32] = 1'b1;
+        end else begin
+            num_out = new;
+        end
+    end
+
+endmodule
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+module fsm_bit_sequence_detection (
+  input clk,
+  input reset,
+  input data,
+  output reg match
+);
+
+  parameter S0 = 2'b00, S1 = 2'b01, S2 = 2'b10, S3 = 2'b11;
+  reg [1:0] state;
+  reg [4:0] shift_reg;
+
+  always @(posedge clk) begin
+    if (reset) begin
+      state <= S0;
+      shift_reg <= 5'b0;
+      match <= 1'b0;
+    end else begin
+      case (state)
+        S0: begin
+          if (data) begin
+            shift_reg <= {shift_reg[3:0], data};
+            state <= S1;
+          end else begin
+            shift_reg <= 5'b0;
+          end
+        end
+        S1: begin
+          if (data) begin
+            shift_reg <= {shift_reg[3:0], data};
+            state <= S2;
+          end else begin
+            shift_reg <= 5'b0;
+            state <= S0;
+          end
+        end
+        S2: begin
+          if (data) begin
+            shift_reg <= {shift_reg[3:0], data};
+            state <= S3;
+          end else begin
+            shift_reg <= 5'b0;
+            state <= S0;
+          end
+        end
+        S3: begin
+          if (shift_reg == 5'b10110) begin
+            match <= 1'b1;
+          end else begin
+            match <= 1'b0;
+          end
+          shift_reg <= 5'b0;
+          state <= S0;
+        end
+      endcase
+    end
+  end
+
+endmodule
+
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+
+module RefModule (
+  input [5:0] y,
+  input w,
+  output Y1,
+  output Y3
+);
+
+  assign Y1 = y[0]&w;
+  assign Y3 = (y[1]|y[2]|y[4]|y[5]) & ~w;
+
+endmodule
+
+
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+
+module RefModule (
+  input clk,
+  input in,
+  input areset,
+  output out
+);
+
+  parameter A=0, B=1, C=2, D=3;
+  reg [1:0] state;
+  reg [1:0] next;
+
+  always_comb begin
+  case (state)
+    A: next = in ? B : A;
+    B: next = in ? B : C;
+    C: next = in ? D : A;
+    D: next = in ? B : C;
+  endcase
+  end
+
+  always @(posedge clk, posedge areset) begin
+    if (areset) state <= A;
+      else state <= next;
+  end
+
+  assign out = (state==D);
+
+endmodule
+
+
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module fsm_pattern_detection (
+  input clk,
+  input reset,
+  input [7:0] in,
+  output reg match,
+  output reg done
+);
+
+  reg [3:0] state;
+  reg [3:0] next_state;
+  
+  always @(posedge clk, posedge reset) begin
+    if (reset) begin
+      state <= 4'b0000;
+      match <= 1'b0;
+      done <= 1'b0;
+    end else begin
+      state <= next_state;
+      match <= (state == 4'b0010);
+      done <= (state == 4'b0100);
+    end
+  end
+  
+  always @(*) begin
+    case (state)
+      4'b0000: next_state = (in == 4'b1010) ? 4'b0010 : 4'b0001;
+      4'b0001: next_state = (in[2:0] == 3'b010) ? 4'b0010 : 4'b0001;
+      4'b0010: next_state = (in[1:0] == 2'b10) ? 4'b0100 : 4'b0001;
+      4'b0100: next_state = 4'b0001;
+      default: next_state = 4'b0000;
+    endcase
+  end
+  
+endmodule
+
+```
+

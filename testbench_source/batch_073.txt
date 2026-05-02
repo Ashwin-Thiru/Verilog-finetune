@@ -1,0 +1,255 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module adder_subtractor (
+    input [3:0] A,
+    input [3:0] B,
+    input C,
+    input Cin,
+    output [3:0] R,
+    output Cout
+);
+
+wire [3:0] sum;
+wire [3:0] twos_comp_B;
+wire carry_in;
+
+assign carry_in = Cin;
+
+// Perform addition
+assign sum = A + B + carry_in;
+
+// Perform subtraction
+assign twos_comp_B = ~B + 1;
+assign sum = A + twos_comp_B + carry_in;
+
+// Determine carry-out
+assign Cout = (C==0) ? (sum[4]) : (~twos_comp_B[4]);
+
+// Determine result
+assign R = (C==0) ? (sum[3:0]) : (twos_comp_B[3:0]);
+
+// Add 1 to result if Cin=1
+assign R = (Cin==1) ? (R+1) : (R);
+
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module binary_to_gray (
+    input [7:0] binary,
+    output [7:0] gray
+);
+
+assign gray = binary ^ {1'b0, binary[7:1]};
+
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module my_module (
+    input A1,
+    input A2,
+    input A3,
+    input B1,
+    input B2,
+    output X
+);
+
+    wire and0_out;
+    wire and1_out;
+    wire or0_out_X;
+
+    and and0 (and0_out, A1, A2, A3);
+    and and1 (and1_out, B1, B2);
+    or or0 (or0_out_X, and0_out, and1_out);
+    buf buf0 (X, or0_out_X);
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module top_module (
+    input [7:0] a,
+    input [7:0] b,
+    output [7:0] s,
+    output overflow
+);
+
+wire [7:0] s0, s1;
+wire c0, c1;
+wire [7:0] a_inv;
+wire [7:0] b_inv;
+wire [7:0] s_inv;
+
+// Invert a and b
+assign a_inv = ~a + 1;
+assign b_inv = ~b + 1;
+
+// Generate two sets of sum and carry outputs
+adder adder0(a, b, 1'b0, s0, c0);
+adder adder1(a_inv, b_inv, 1'b1, s_inv, c1);
+
+// Select the correct sum output based on the carry output
+mux2to1 mux(c1, s_inv, s0, s);
+
+// Detect overflow
+overflow_detection overflow_detection(s, a, b, overflow);
+
+endmodule
+
+module adder (
+    input [7:0] a,
+    input [7:0] b,
+    input cin,
+    output [7:0] s,
+    output cout
+);
+
+wire [7:0] sum;
+wire [7:0] carry;
+
+// Generate sum and carry outputs for each bit
+genvar i;
+generate
+    for (i = 0; i < 8; i = i + 1) begin : gen_adder
+        full_adder fa(a[i], b[i], cin, sum[i], carry[i]);
+    end
+endgenerate
+
+// Combine sum and carry outputs
+assign s = sum;
+assign cout = carry[7];
+
+endmodule
+
+module full_adder (
+    input a,
+    input b,
+    input cin,
+    output sum,
+    output cout
+);
+
+assign sum = a ^ b ^ cin;
+assign cout = (a & b) | (a & cin) | (b & cin);
+
+endmodule
+
+module mux2to1 (
+    input sel,
+    input [7:0] in1,
+    input [7:0] in2,
+    output [7:0] out
+);
+
+assign out = sel ? in2 : in1;
+
+endmodule
+
+module overflow_detection (
+    input [7:0] s,
+    input [7:0] a,
+    input [7:0] b,
+    output overflow
+);
+
+wire [7:0] s_inv;
+wire [7:0] a_sign;
+wire [7:0] b_sign;
+wire [7:0] s_sign;
+
+// Invert s
+assign s_inv = ~s + 1;
+
+// Determine sign of a, b, and s
+assign a_sign = a[7];
+assign b_sign = b[7];
+assign s_sign = s[7];
+
+// Overflow occurs if a and b have the same sign, but s has a different sign
+assign overflow = (a_sign == b_sign) && (a_sign != s_sign);
+
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module adder (
+    input [7:0] a,
+    input [7:0] b,
+    output [7:0] sum,
+    output overflow
+);
+
+wire [8:0] sum_wire = a + b;
+assign overflow = sum_wire[8];
+assign sum = sum_wire[7:0];
+
+endmodule
+
+module tb_adder;
+
+reg [7:0] a;
+reg [7:0] b;
+wire [7:0] sum;
+wire overflow;
+
+adder adder_inst (
+    .a(a),
+    .b(b),
+    .sum(sum),
+    .overflow(overflow)
+);
+
+initial begin
+    // Test case 1
+    a = 8'b00000001;
+    b = 8'b00000001;
+    #10;
+    if (sum !== 8'b00000010 || overflow !== 1'b0) begin
+        $display("Test case 1 failed: sum = %b, overflow = %b", sum, overflow);
+        $finish;
+    end
+    
+    // Test case 2
+    a = 8'b11111111;
+    b = 8'b00000001;
+    #10;
+    if (sum !== 8'b00000000 || overflow !== 1'b1) begin
+        $display("Test case 2 failed: sum = %b, overflow = %b", sum, overflow);
+        $finish;
+    end
+    
+    // Test case 3
+    a = 8'b01111111;
+    b = 8'b00000001;
+    #10;
+    if (sum !== 8'b10000000 || overflow !== 1'b0) begin
+        $display("Test case 3 failed: sum = %b, overflow = %b", sum, overflow);
+        $finish;
+    end
+    
+    // Test case 4
+    a = 8'b10000000;
+    b = 8'b10000000;
+    #10;
+    if (sum !== 8'b00000000 || overflow !== 1'b1) begin
+        $display("Test case 4 failed: sum = %b, overflow = %b", sum, overflow);
+        $finish;
+    end
+    
+    $display("All test cases passed.");
+    $finish;
+end
+
+endmodule
+```
+

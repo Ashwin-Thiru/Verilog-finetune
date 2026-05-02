@@ -1,0 +1,129 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module up_down_counter (
+    input clk,
+    input up_down,
+    input reset,
+    output reg [2:0] Q
+);
+
+    always @(posedge clk) begin
+        if (reset) begin
+            Q <= 3'b0;
+        end else if (up_down) begin
+            Q <= Q + 1;
+        end else begin
+            Q <= Q - 1;
+        end
+    end
+
+endmodule
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module iodelay_incrementor(
+    input clk40,
+    input rst,
+    input count_trig,
+    input  [5:0] spec_delay,
+    output reg inc_en,
+    output reg [5:0] actual_delay
+);
+
+always @(posedge clk40) begin
+    if (rst) begin
+        inc_en <= 0;
+        actual_delay <= 0;
+    end else begin
+        if (inc_en) begin
+            //Triggered
+            if (actual_delay == spec_delay) begin
+                inc_en <= 0;
+            end else begin
+                actual_delay <= actual_delay + 1;
+            end
+        end else begin
+            if (count_trig) begin
+                //Trigger idelay count
+                inc_en <= 1;
+            end
+        end
+    end
+end
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module priority_encoder (
+    input [7:0] I,
+    output reg EN,
+    output reg V,
+    output reg [2:0] Q
+);
+    
+    always @(*) begin
+        if (|I) begin
+            EN = 1;
+            V = (|I) & (~&I);
+            Q = $onehot0(I);
+        end
+        else begin
+            EN = 0;
+            V = 0;
+            Q = 0;
+        end
+    end
+    
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module d_latch (
+    input D,
+    input GATE,
+    output Q,
+    output Q_N
+);
+
+    reg Q_reg;
+    assign Q = Q_reg;
+    assign Q_N = ~Q_reg;
+
+    always @(posedge GATE) begin
+        if (GATE) begin
+            Q_reg <= D;
+        end
+    end
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module binary_counter (
+    input clk,
+    input rst,
+    output reg [3:0] count
+);
+
+    always @(posedge clk) begin
+        if (rst) begin
+            count <= 4'b0000;
+        end
+        else begin
+            count <= count + 1;
+        end
+    end
+
+endmodule
+```
+

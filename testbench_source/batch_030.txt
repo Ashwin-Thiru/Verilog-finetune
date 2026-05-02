@@ -1,0 +1,163 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module counter(input clk, input reset, input enable, input in, output reg [4-1:0] out);
+    always @(posedge clk) begin
+        if(reset) begin
+            out <= 4'b0;
+        end else if(enable) begin
+            out <= out + 1;
+        end
+    end
+endmodule
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module counter (
+    input clk,
+    input reset,
+    output reg [3:0] count,
+    output reg overflow
+);
+
+always @(posedge clk) begin
+    if (reset) begin
+        count <= 0;
+        overflow <= 0;
+    end else if (count == 15) begin
+        count <= 0;
+        overflow <= 1;
+    end else begin
+        count <= count + 1;
+        overflow <= 0;
+    end
+end
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+
+module RefModule (
+  input a,
+  input b,
+  input sel_b1,
+  input sel_b2,
+  output out_assign,
+  output reg out_always
+);
+
+  assign out_assign = (sel_b1 & sel_b2) ? b : a;
+  always @(*) out_always = (sel_b1 & sel_b2) ? b : a;
+
+endmodule
+
+
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module my_dff(
+    input d,
+    input clk,
+    output reg q
+);
+
+always @(posedge clk)
+    q <= d;
+
+endmodule
+
+module shift_register_parity(
+    input [2:0] d,
+    input enable,
+    output [2:0] q,
+    output parity
+);
+
+reg [2:0] shift_reg;
+wire [2:0] shifted_data;
+wire [2:0] shifted_data_parity;
+
+my_dff dff1(.d(d[0]), .clk(enable), .q(shifted_data[0]));
+my_dff dff2(.d(d[1]), .clk(enable), .q(shifted_data[1]));
+my_dff dff3(.d(d[2]), .clk(enable), .q(shifted_data[2]));
+
+assign shifted_data[0] = shift_reg[1];
+assign shifted_data[1] = shift_reg[2];
+assign shifted_data[2] = dff3.q;
+
+assign shifted_data_parity = shifted_data[0] ^ shifted_data[1] ^ shifted_data[2];
+
+always @(posedge enable) begin
+    if(enable) begin
+        shift_reg <= shifted_data;
+    end
+end
+
+assign q = shift_reg;
+assign parity = ~shifted_data_parity;
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module led_controller_design_rst_ps7_0_100M_0(
+  input slowest_sync_clk,
+  input ext_reset_in,
+  input aux_reset_in,
+  input mb_debug_sys_rst,
+  input dcm_locked,
+  output mb_reset,
+  output [0:0]bus_struct_reset,
+  output [0:0]peripheral_reset,
+  output [0:0]interconnect_aresetn,
+  output [0:0]peripheral_aresetn
+);
+
+  reg [0:0] bus_struct_reset_reg;
+  reg [0:0] peripheral_reset_reg;
+  reg [0:0] interconnect_aresetn_reg;
+  reg [0:0] peripheral_aresetn_reg;
+
+  always @(posedge slowest_sync_clk or negedge ext_reset_in or negedge aux_reset_in or 
+           negedge mb_debug_sys_rst or negedge dcm_locked) begin
+    if (!ext_reset_in) begin
+      bus_struct_reset_reg <= 2'b11;
+      peripheral_reset_reg <= 2'b11;
+      interconnect_aresetn_reg <= 2'b11;
+      peripheral_aresetn_reg <= 2'b11;
+    end else if (!aux_reset_in) begin
+      bus_struct_reset_reg <= 2'b10;
+      peripheral_reset_reg <= 2'b10;
+      interconnect_aresetn_reg <= 2'b10;
+      peripheral_aresetn_reg <= 2'b10;
+    end else if (!mb_debug_sys_rst) begin
+      bus_struct_reset_reg <= 2'b01;
+      peripheral_reset_reg <= 2'b01;
+      interconnect_aresetn_reg <= 2'b01;
+      peripheral_aresetn_reg <= 2'b01;
+    end else if (!dcm_locked) begin
+      bus_struct_reset_reg <= 2'b00;
+      peripheral_reset_reg <= 2'b00;
+      interconnect_aresetn_reg <= 2'b00;
+      peripheral_aresetn_reg <= 2'b00;
+    end
+  end
+
+  assign mb_reset = (bus_struct_reset_reg == 2'b11);
+  assign bus_struct_reset = bus_struct_reset_reg;
+  assign peripheral_reset = peripheral_reset_reg;
+  assign interconnect_aresetn = interconnect_aresetn_reg;
+  assign peripheral_aresetn = peripheral_aresetn_reg;
+
+endmodule
+```
+

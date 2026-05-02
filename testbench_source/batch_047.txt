@@ -1,0 +1,309 @@
+MODULE 1:
+Topic: memory
+```verilog
+module uart_rx(
+    input clk,
+    input rst_n,
+    input [2:0] uart_ctl,
+    input rs_rx,
+    output reg [6:0] data_in,
+    output reg data_sign
+    );
+    
+    parameter bps9600_2  = 13'd2604;
+    parameter bps19200_2 = 13'd1301;
+    parameter bps38400_2 = 13'd650;
+    parameter bps57600_2 = 13'd433;
+    parameter bps115200_2 = 13'd217;
+    parameter bps256000_2 = 13'd97;
+    
+    parameter IDLE = 2'b01;
+    parameter TRAN = 2'b10;
+    
+    reg [1:0] state;
+    reg bps_sel, sign_sel;
+    reg [12:0] cnt;
+    reg [4:0] tran_cnt;
+    
+    wire recv_comp;
+    assign recv_comp = (tran_cnt == 17 && bps_sel);
+    
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= IDLE;
+        end else begin
+            case (state)
+                IDLE: state <= ~rs_rx ? TRAN : IDLE;
+                TRAN: state <= recv_comp ? IDLE : TRAN;
+                default: state <= IDLE;
+            endcase
+        end
+    end
+    
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            bps_sel <= 1'b0;
+            sign_sel <= 1'b0;
+            cnt <= 'h0;
+            tran_cnt <= 'h0;
+        end else begin
+            if (state == TRAN) begin
+                case (uart_ctl)
+                    3'h0: if (cnt == bps9600_2) begin
+                            cnt <= 'h0;
+                            bps_sel <= ~sign_sel;
+                            sign_sel <= ~sign_sel;
+                            tran_cnt <= tran_cnt + 1'b1;
+                          end else begin
+                            cnt <= cnt + 1'b1;
+                            bps_sel <= 1'b0;
+                          end
+                    3'h1: if (cnt == bps19200_2) begin
+                            cnt <= 'h0;
+                            bps_sel <= ~sign_sel;
+                            sign_sel <= ~sign_sel;
+                            tran_cnt <= tran_cnt + 1'b1;
+                          end else begin
+                            cnt <= cnt + 1'b1;
+                            bps_sel <= 1'b0;
+                          end
+                    3'h2: if (cnt == bps38400_2) begin
+                            cnt <= 'h0;
+                            bps_sel <= ~sign_sel;
+                            sign_sel <= ~sign_sel;
+                            tran_cnt <= tran_cnt + 1'b1;
+                          end else begin
+                            cnt <= cnt + 1'b1;
+                            bps_sel <= 1'b0;
+                          end
+                    3'h3: if (cnt == bps57600_2) begin
+                            cnt <= 'h0;
+                            bps_sel <= ~sign_sel;
+                            sign_sel <= ~sign_sel;
+                            tran_cnt <= tran_cnt + 1'b1;
+                          end else begin
+                            cnt <= cnt + 1'b1;
+                            bps_sel <= 1'b0;
+                          end
+                    3'h4: if (cnt == bps115200_2) begin
+                            cnt <= 'h0;
+                            bps_sel <= ~sign_sel;
+                            sign_sel <= ~sign_sel;
+                            tran_cnt <= tran_cnt + 1'b1;
+                          end else begin
+                            cnt <= cnt + 1'b1;
+                            bps_sel <= 1'b0;
+                          end
+                    3'h5: if (cnt == bps256000_2) begin
+                            cnt <= 'h0;
+                            bps_sel <= ~sign_sel;
+                            sign_sel <= ~sign_sel;
+                            tran_cnt <= tran_cnt + 1'b1;
+                          end else begin
+                            cnt <= cnt + 1'b1;
+                            bps_sel <= 1'b0;
+                          end
+                    default: begin
+                                cnt <= 'h0;
+                                tran_cnt <= 0;
+                                bps_sel <= 'h0;
+                                sign_sel <= 'h0;
+                             end
+                endcase
+            end else begin
+                cnt <= 'h0;
+                sign_sel <= 'h0;
+                bps_sel <= 1'b0;
+                tran_cnt <= 'h0;
+                bps_sel <= 1'b0;
+            end
+        end
+    end
+    
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            data_in <= 'h0;
+            data_sign <= 'h0;
+        end else begin
+            if (bps_sel) begin
+                if (tran_cnt > 2 && tran_cnt <= 16) begin
+                    data_in[tran_cnt[4:1] - 1] <= rs_rx;
+                end
+                data_sign <= (tran_cnt == 17) ? 1'b1 : 1'b0;
+            end else begin
+                data_sign <= 1'b0;
+            end
+        end
+    end
+    
+endmodule
+```
+
+MODULE 2:
+Topic: memory
+```verilog
+module top_module( 
+    input [15:0] in1,
+    input [15:0] in2,
+    input [3:0] sel,
+    input select_add_sub,
+    input reset,
+    output reg [15:0] out );
+
+    reg [15:0] add_out;
+    reg [15:0] sub_out;
+    reg [3:0] priority;
+    reg [15:0] selected_input;
+
+    // Priority Encoder
+    always @* begin
+        case ({in1, in2})
+            16'h0000: priority = 4'b0000;
+            16'h0001: priority = 4'b0001;
+            16'h0002: priority = 4'b0010;
+            16'h0004: priority = 4'b0011;
+            16'h0008: priority = 4'b0100;
+            16'h0010: priority = 4'b0101;
+            16'h0020: priority = 4'b0110;
+            16'h0040: priority = 4'b0111;
+            16'h0080: priority = 4'b1000;
+            16'h0100: priority = 4'b1001;
+            16'h0200: priority = 4'b1010;
+            16'h0400: priority = 4'b1011;
+            16'h0800: priority = 4'b1100;
+            16'h1000: priority = 4'b1101;
+            16'h2000: priority = 4'b1110;
+            16'h4000: priority = 4'b1111;
+            default: priority = 4'b0000;
+        endcase
+    end
+
+    // Priority Decoder
+    always @* begin
+        case (sel)
+            4'b0000: selected_input = in1;
+            4'b0001: selected_input = in2;
+            4'b0010: selected_input = 16'h0000;
+            4'b0011: selected_input = 16'h0001;
+            4'b0100: selected_input = 16'h0002;
+            4'b0101: selected_input = 16'h0004;
+            4'b0110: selected_input = 16'h0008;
+            4'b0111: selected_input = 16'h0010;
+            4'b1000: selected_input = 16'h0020;
+            4'b1001: selected_input = 16'h0040;
+            4'b1010: selected_input = 16'h0080;
+            4'b1011: selected_input = 16'h0100;
+            4'b1100: selected_input = 16'h0200;
+            4'b1101: selected_input = 16'h0400;
+            4'b1110: selected_input = 16'h0800;
+            4'b1111: selected_input = 16'h1000;
+            default: selected_input = in1;
+        endcase
+    end
+
+    // Adder and Subtractor
+    always @* begin
+        add_out = in1 + in2;
+        sub_out = in1 - in2;
+    end
+
+    // Output Logic
+    always @* begin
+        case (select_add_sub)
+            1'b0: out = add_out;
+            1'b1: out = sub_out;
+            default: out = 16'h0000;
+        endcase
+    end
+
+    // Reset Logic
+    always @(posedge reset) begin
+        out <= 16'h0000;
+    end
+
+endmodule
+```
+
+MODULE 3:
+Topic: memory
+```verilog
+module BOR (
+  input voltage,
+  input reset_in,
+  output reset_out
+);
+
+parameter threshold = 3.3; // voltage threshold value
+
+reg reset_out_reg; // register to synchronize reset_out with reset_in
+
+always @(posedge reset_in) begin
+  reset_out_reg <= 1'b0; // reset reset_out_reg on rising edge of reset_in
+end
+
+always @(posedge voltage) begin
+  if (voltage < threshold) begin
+    reset_out_reg <= 1'b1; // set reset_out_reg to 1 if voltage is below threshold
+  end else begin
+    reset_out_reg <= 1'b0; // reset reset_out_reg to 0 if voltage is above threshold
+  end
+end
+
+assign reset_out = reset_out_reg & reset_in; // synchronize reset_out with reset_in
+
+endmodule
+```
+
+MODULE 4:
+Topic: memory
+```verilog
+module pipeemreg(i_wreg,i_m2reg,i_wmem,i_alu,i_b,i_rn,clk,rst,o_wreg,o_m2reg,o_wmem,o_alu,o_b,o_rn);
+  input wire clk, rst,i_wreg,i_m2reg,i_wmem;
+  input wire [31:0] i_b,i_alu;
+  input wire [4:0] i_rn;
+  output reg o_wreg,o_m2reg,o_wmem;
+  output reg [31:0] o_b,o_alu;
+  output reg [4:0] o_rn;
+  always @(posedge clk) begin
+    if (rst) begin 
+      o_wreg<=0;
+      o_m2reg<=0;
+      o_wmem<=0;
+      o_alu<=0;
+      o_b<=0;
+      o_rn<=0;
+    end
+    else begin 
+      o_wreg<=i_wreg;
+      o_m2reg<=i_m2reg;
+      o_wmem<=i_wmem;
+      o_alu<=i_alu;
+      o_b<=i_b;
+      o_rn<=i_rn;
+    end
+  end
+endmodule
+```
+
+MODULE 5:
+Topic: memory
+```verilog
+module RegisterAdd #(parameter WIDTH=26) (
+    input CLK,
+    input RESET,
+    input [WIDTH-1:0] A,
+    input [WIDTH-1:0] B,
+    output reg [WIDTH-1:0] SUM
+    );
+
+    always @(posedge CLK) begin
+        if (RESET == 0) begin
+            SUM <= 0;
+        end else begin
+            SUM <= A + B;
+        end
+    end
+
+endmodule
+```
+

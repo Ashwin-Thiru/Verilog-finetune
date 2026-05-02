@@ -1,0 +1,178 @@
+MODULE 1:
+Topic: sequential
+```verilog
+module adder_4bit(
+    input clk,
+    input rst,
+    input [3:0] a,
+    input [3:0] b,
+    input cin,
+    output [3:0] sum,
+    output cout
+);
+
+reg [3:0] sum_reg;
+reg cout_reg;
+
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        sum_reg <= 4'b0;
+        cout_reg <= 1'b0;
+    end else begin
+        sum_reg <= a + b + cin;
+        cout_reg <= sum_reg[4];
+    end
+end
+
+assign sum = sum_reg;
+assign cout = cout_reg;
+
+endmodule
+```
+
+MODULE 2:
+Topic: sequential
+```verilog
+module binary_counter (
+    input clk,
+    input rst,
+    input en,
+    input ld,
+    input [3:0] load_data,
+    output reg [3:0] count
+);
+
+    always @(posedge clk) begin
+        if (rst) begin
+            count <= 4'b0000;
+        end else if (en) begin
+            if (ld) begin
+                count <= load_data;
+            end else begin
+                count <= count + 1;
+            end
+        end
+    end
+
+endmodule
+```
+
+MODULE 3:
+Topic: sequential
+```verilog
+module bm_match4_str_arch(
+    input clock, 
+    input reset_n, 
+    input [1:0] a_in, 
+    input [1:0] b_in,
+    input [1:0] c_in, 
+    input [1:0] d_in, 
+    input [1:0] e_in, 
+    input [1:0] f_in, 
+    output reg [3:0] out0,
+    output reg [3:0] out1,
+    output reg [3:0] out2,
+    output wire [3:0] out3,
+    output wire [3:0] out4,
+    output wire [3:0] out5
+);
+
+    always @(posedge clock) begin
+        if (!reset_n) begin
+            out0 <= 4'b0;
+            out1 <= 4'b0;
+            out2 <= 4'b0;
+        end else begin
+            out0 <= out3 + out4 + out5;
+            out1 <= c_in * d_in;
+            out2 <= e_in * f_in;
+        end
+    end
+    
+    assign out3 = a_in * b_in;
+    assign out4 = c_in * d_in;
+    assign out5 = e_in * f_in;
+
+endmodule
+```
+
+MODULE 4:
+Topic: sequential
+```verilog
+module timer(
+    input clk,
+    input rst,
+    input start_timer,
+    input [3:0] time_value,
+    output expired
+);
+
+    reg [3:0] counter = 4'b0000;
+    reg expired_reg = 1'b0;
+    wire clk_div;
+
+    assign expired = expired_reg;
+
+    clock_divider div(clk, rst, clk_div);
+
+    always @(posedge clk_div or negedge start_timer) begin
+        if (~start_timer) begin
+            counter <= 4'b0000;
+            expired_reg <= 1'b0;
+        end else begin
+            if (counter == time_value) begin
+                expired_reg <= 1'b1;
+            end else begin
+                counter <= counter + 1;
+            end
+        end
+    end
+
+endmodule
+
+module clock_divider(
+    input clk,
+    input rst,
+    output reg clk_div
+);
+
+    reg [23:0] count = 24'd0;
+
+    always @(posedge clk, negedge rst) begin
+        if (~rst) begin
+            count <= 24'd0;
+            clk_div <= 1'b0;
+        end else begin
+            count <= count + 1;
+            if (count == 24'd499999) begin
+                count <= 24'd0;
+                clk_div <= ~clk_div;
+            end
+        end
+    end
+
+endmodule
+```
+
+MODULE 5:
+Topic: sequential
+```verilog
+module synchronous_up_counter (
+  input clk,
+  input reset,
+  input enable,
+  output reg [3:0] count
+);
+
+always @(posedge clk) begin
+  if (reset) begin
+    count <= 4'b0000;
+  end else if (enable) begin
+    count <= count + 1;
+  end
+end
+
+endmodule
+
+```
+

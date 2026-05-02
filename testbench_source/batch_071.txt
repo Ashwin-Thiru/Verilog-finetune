@@ -1,0 +1,196 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module FullAdder(A, B, Cin, Sum, Cout);
+
+input A, B, Cin;
+output Sum, Cout;
+
+wire w1, w2, w3;
+
+// First XOR gate
+xor(w1, A, B);
+
+// Second XOR gate
+xor(Sum, w1, Cin);
+
+// First AND gate
+and(w2, A, B);
+
+// Second AND gate
+and(w3, Cin, w1);
+
+// Third AND gate
+and(Cout, w2, w3);
+
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module binary_adder(
+    input [4:0] a,
+    input [4:0] b,
+    output [4:0] sum,
+    output carry
+);
+
+    wire c1, c2, c3, c4, c5;
+    wire s1, s2, s3, s4, s5;
+
+    // Full Adders
+    full_adder fa1(a[0], b[0], 1'b0, s1, c1);
+    full_adder fa2(a[1], b[1], c1, s2, c2);
+    full_adder fa3(a[2], b[2], c2, s3, c3);
+    full_adder fa4(a[3], b[3], c3, s4, c4);
+    full_adder fa5(a[4], b[4], c4, s5, c5);
+
+    // Sum output
+    assign sum = {s5, s4, s3, s2, s1};
+    
+    // Carry output
+    assign carry = c5;
+
+endmodule
+
+module full_adder(
+    input a,
+    input b,
+    input cin,
+    output sum,
+    output cout
+);
+
+    wire s1, c1, c2;
+
+    // Half Adder 1
+    half_adder ha1(a, b, s1, c1);
+    
+    // Half Adder 2
+    half_adder ha2(s1, cin, sum, c2);
+    
+    // Carry output
+    assign cout = c1 | c2;
+
+endmodule
+
+module half_adder(
+    input a,
+    input b,
+    output sum,
+    output carry
+);
+
+    // Sum output
+    assign sum = a ^ b;
+    
+    // Carry output
+    assign carry = a & b;
+
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module and_or_xor_module(
+    input [3:0] in,
+    output out_and,
+    output out_or,
+    output out_xor
+);
+
+    wire and_out;
+    wire or_out;
+
+    assign and_out = &in;
+    assign or_out = |in;
+    assign out_xor = ^in;
+
+    assign out_and = and_out;
+    assign out_or = or_out;
+
+endmodule
+
+module top_module( 
+    input [3:0] in,
+    output out_and,
+    output out_or,
+    output out_xor
+);
+
+    and_or_xor_module module1(
+        .in(in),
+        .out_and(out_and),
+        .out_or(out_or),
+        .out_xor(out_xor)
+    );
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module top_module( 
+    input a, 
+    input b, 
+    input cin,
+    output cout, 
+    output sum,
+    output out );
+    
+    // Half Adder
+    wire ha_sum, ha_carry;
+    xor(ha_sum, a, b);
+    and(ha_carry, a, b);
+    
+    // XNOR Gate using NAND gates
+    wire xnor_out;
+    nand(xnor_out, a, b);
+    nand(xnor_out, xnor_out, xnor_out);
+    nand(xnor_out, xnor_out, xnor_out);
+    
+    // Final Output Module
+    assign sum = ha_sum;
+    assign cout = ha_carry;
+    assign out = (ha_carry == 1'b0) ? xnor_out : ha_sum;
+    
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module largest_of_three (
+    A,
+    B,
+    C,
+    X
+);
+
+    input A;
+    input B;
+    input C;
+    output X;
+
+    wire AB;
+    wire AC;
+    wire BC;
+
+    // Find the largest value between A and B
+    assign AB = (A > B) ? 1'b1 : 1'b0;
+
+    // Find the largest value between A and C
+    assign AC = (A > C) ? 1'b1 : 1'b0;
+
+    // Find the largest value between B and C
+    assign BC = (B > C) ? 1'b1 : 1'b0;
+
+    // Output the largest value among A, B, and C
+    assign X = (AB & AC) | (AB & BC) | (AC & BC) ? 1'b1 : 1'b0;
+
+endmodule
+```
+

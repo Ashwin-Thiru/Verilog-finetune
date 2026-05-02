@@ -1,0 +1,126 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module mutex (G1, G2, R1, R2);
+  output G1, G2;
+  input R1, R2;
+
+  wire R1_inv, R2_inv;
+
+  // Invert the R1 and R2 signals
+  not U0 (R1_inv, R1);
+  not U1 (R2_inv, R2);
+
+  // AND the inverted signals together
+  and U2 (G1, R1_inv, R2);
+  and U3 (G2, R2_inv, R1);
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module comparator_mux (
+    input [15:0] a,
+    input [15:0] b,
+    input [15:0] c,
+    input sel,
+    output [15:0] out,
+    output equal
+);
+
+    wire [15:0] larger;
+    assign larger = (a > b) ? a : b;
+    
+    assign out = (sel == 1'b0) ? larger : c;
+    
+    assign equal = (a == b) ? 1'b1 : 1'b0;
+    
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module multiplier(
+  input [31:0] a,
+  input [31:0] b,
+  output [63:0] result
+);
+
+  wire [31:0] a_lo;
+  wire [31:0] a_hi;
+  wire [31:0] b_lo;
+  wire [31:0] b_hi;
+
+  assign a_lo = a[15:0];
+  assign a_hi = a[31:16];
+  assign b_lo = b[15:0];
+  assign b_hi = b[31:16];
+
+  wire [63:0] p0;
+  wire [63:0] p1;
+  wire [63:0] p2;
+
+  assign p0 = a_lo * b_lo;
+  assign p1 = a_hi * b_lo;
+  assign p2 = a_lo * b_hi;
+
+  assign result = (p0 + (p1 << 16) + (p2 << 16)) + (a_hi * b_hi) << 32;
+
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module Vector(a, b, c);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// I/O declarations
+
+	(* LOC = "P20 P19" *)
+	input wire[1:0] a;
+
+	(* LOC = "P18 P17" *)
+	input wire[1:0] b;
+
+	(* LOC = "P16 P15" *)
+	output wire[1:0] c;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// The actual logic
+
+	assign c = a & b;
+
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module four_input_gate (
+    X,
+    A1,
+    A2,
+    B1,
+    B2
+);
+
+    output X;
+    input A1;
+    input A2;
+    input B1;
+    input B2;
+
+    // Voltage supply signals
+    supply1 VPWR;
+    supply0 VGND;
+    supply1 VPB;
+    supply0 VNB;
+
+    assign X = ((A1 & A2) | (B1 & B2)) & !(A1 & A2 & B1 & B2);
+
+endmodule
+```
+

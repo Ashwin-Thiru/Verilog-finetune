@@ -1,0 +1,209 @@
+MODULE 1:
+Topic: fsm
+```verilog
+module edge_detector (
+    input clk,
+    input [7:0] in,
+    output [7:0] anyedge
+);
+
+reg [7:0] prev_in;
+reg [7:0] edge_detected;
+
+parameter IDLE = 2'b00;
+parameter RISING_EDGE = 2'b01;
+parameter FALLING_EDGE = 2'b10;
+
+always @(posedge clk) begin
+    case (prev_in ^ in)
+        8'b00000001, 8'b00000010, 8'b00000100, 8'b00001000, 8'b00010000, 8'b00100000, 8'b01000000, 8'b10000000:
+            edge_detected <= RISING_EDGE;
+        8'b11111110, 8'b11111101, 8'b11111011, 8'b11110111, 8'b11101111, 8'b11011111, 8'b10111111, 8'b01111111:
+            edge_detected <= FALLING_EDGE;
+        default:
+            edge_detected <= IDLE;
+    endcase
+    prev_in <= in;
+end
+
+assign anyedge = edge_detected;
+
+endmodule
+```
+
+MODULE 2:
+Topic: fsm
+```verilog
+
+module RefModule (
+  input d,
+  input done_counting,
+  input ack,
+  input [9:0] state, // 10-bit one-hot current state
+  output B3_next,
+  output S_next,
+  output S1_next,
+  output Count_next,
+  output Wait_next,
+  output done,
+  output counting,
+  output shift_ena
+);
+
+  parameter S=0, S1=1, S11=2, S110=3, B0=4, B1=5, B2=6, B3=7, Count=8, Wait=9;
+
+  assign B3_next = state[B2];
+  assign S_next = state[S]&~d | state[S1]&~d | state[S110]&~d | state[Wait]&ack;
+  assign S1_next = state[S]&d;
+  assign Count_next = state[B3] | state[Count]&~done_counting;
+  assign Wait_next = state[Count]&done_counting | state[Wait]&~ack;
+
+  assign done = state[Wait];
+  assign counting = state[Count];
+  assign shift_ena = |state[B3:B0];
+
+endmodule
+
+
+```
+
+MODULE 3:
+Topic: fsm
+```verilog
+
+module RefModule (
+  input clk,
+  input reset,
+  input w,
+  output z
+);
+
+  parameter A=0,B=1,C=2,D=3,E=4,F=5;
+  reg[2:0] state, next;
+
+  always @(posedge clk)
+    if (reset) state <= A;
+    else state <= next;
+
+  always_comb begin
+    case (state)
+      A: next = w ? B : A;
+      B: next = w ? C : D;
+      C: next = w ? E : D;
+      D: next = w ? F : A;
+      E: next = w ? E : D;
+      F: next = w ? C : D;
+      default: next = 'x;
+    endcase
+  end
+
+  assign z = (state == E) || (state == F);
+
+endmodule
+
+
+```
+
+MODULE 4:
+Topic: fsm
+```verilog
+module controller_m(
+    input clock, reset, start, Zero,
+    output Ready, Load_regs, Add_dec
+);
+parameter S_Idle = 1'b0, S_Mul = 1'b1;
+
+reg state, next_state;
+
+always @(posedge clock, posedge reset)
+    if (reset)
+        state <= S_Idle;
+    else
+        state <= next_state;
+
+always @(*)
+begin
+    case (state)
+        S_Idle: next_state = Load_regs ? S_Mul : S_Idle;
+        S_Mul: next_state = Add_dec ? S_Idle : S_Mul;
+        default: next_state = 1'bx;
+    endcase
+end
+
+assign Ready = state == S_Idle;
+assign Load_regs = Ready & start;
+assign Add_dec = (state == S_Mul & ~Zero);
+
+endmodule
+```
+
+MODULE 5:
+Topic: fsm
+```verilog
+module spi_state_machine (
+  input clk,
+  input rst,
+  input cs,
+  input mosi,
+  input sclk,
+  output reg miso
+);
+
+  // Define the states of the SPI state machine
+  parameter IDLE_STATE = 2'b00;
+  parameter ACTIVE_STATE = 2'b01;
+
+  // Define the modes of the SPI state machine
+  parameter MASTER_MODE = 1'b1;
+  parameter SLAVE_MODE = 1'b0;
+
+  // Define the data transfer modes of the SPI state machine
+  parameter EIGHT_BIT_MODE = 1'b0;
+  parameter SIXTEEN_BIT_MODE = 1'b1;
+
+  // Define the state and mode variables
+  reg [1:0] state;
+  reg mode;
+  reg [3:0] bit_count;
+  reg [15:0] data_out;
+  reg [15:0] data_in;
+
+  always @(posedge clk) begin
+    if (rst) begin
+      state <= IDLE_STATE;
+      mode <= SLAVE_MODE;
+      bit_count <= 4'b0000;
+      data_out <= 16'b0000000000000000;
+      data_in <= 16'b0000000000000000;
+      miso <= 1'b0;
+    end else begin
+      case (state)
+        IDLE_STATE: begin
+          if (!cs) begin
+            state <= ACTIVE_STATE;
+            bit_count <= 4'b0000;
+            data_out <= {mosi, 8'b0};
+          end
+        end
+        ACTIVE_STATE: begin
+          if (mode == MASTER_MODE) begin
+            miso <= data_in[15];
+            data_in <= {data_in[14:0], 1'b0};
+          end else begin
+            miso <= data_out[15];
+            data_out <= {data_out[14:0], 1'b0};
+          end
+          if (sclk) begin
+            bit_count <= bit_count + 1;
+            if (bit_count == SIXTEEN_BIT_MODE) begin
+              state <= IDLE_STATE;
+            end
+          end
+        end
+      endcase
+    end
+  end
+
+endmodule
+```
+

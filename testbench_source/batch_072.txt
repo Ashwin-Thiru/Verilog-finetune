@@ -1,0 +1,179 @@
+MODULE 1:
+Topic: arithmetic
+```verilog
+module barrel_shifter (
+    input [3:0] data_in,
+    input [1:0] shift_amount,
+    output [3:0] out
+);
+
+    assign out = (shift_amount == 0) ? data_in :
+                 (shift_amount == 1) ? {data_in[0], data_in[3:1]} :
+                 (shift_amount == 2) ? {data_in[1:0], data_in[3:2]} :
+                 (shift_amount == 3) ? {data_in[2:0], data_in[3]} :
+                 4'b0000;
+
+endmodule
+```
+
+MODULE 2:
+Topic: arithmetic
+```verilog
+module ripple_carry_adder (
+  input [3:0] A,
+  input [3:0] B,
+  input Cin,
+  output [3:0] S,
+  output Cout
+);
+
+wire [3:0] C;
+
+// Full adder for the least significant bit
+full_adder FA0(A[0], B[0], Cin, S[0], C[0]);
+
+// Full adder for the remaining bits
+full_adder FA1(A[1], B[1], C[0], S[1], C[1]);
+full_adder FA2(A[2], B[2], C[1], S[2], C[2]);
+full_adder FA3(A[3], B[3], C[2], S[3], Cout);
+
+endmodule
+
+module full_adder (
+  input A,
+  input B,
+  input Cin,
+  output S,
+  output Cout
+);
+
+wire w1, w2, w3;
+
+// XOR gate for sum
+xor_gate XOR1(A, B, w1);
+xor_gate XOR2(w1, Cin, S);
+
+// AND gate for carry-out
+and_gate AND1(A, B, w2);
+and_gate AND2(w1, Cin, w3);
+or_gate OR1(w2, w3, Cout);
+
+endmodule
+
+module xor_gate (
+  input A,
+  input B,
+  output S
+);
+
+assign S = A ^ B;
+
+endmodule
+
+module and_gate (
+  input A,
+  input B,
+  output S
+);
+
+assign S = A & B;
+
+endmodule
+
+module or_gate (
+  input A,
+  input B,
+  output S
+);
+
+assign S = A | B;
+
+endmodule
+```
+
+MODULE 3:
+Topic: arithmetic
+```verilog
+module multiplier_block (
+    i_data0,
+    o_data0
+);
+
+  // Port mode declarations:
+  input   [31:0] i_data0;
+  output  [31:0]
+    o_data0;
+
+  //Multipliers:
+
+  wire [31:0]
+    w1,
+    w128,
+    w129,
+    w16384,
+    w16513,
+    w2064,
+    w18577,
+    w516,
+    w19093;
+
+  assign w1 = i_data0;
+  assign w128 = w1 << 7;
+  assign w129 = w1 + w128;
+  assign w16384 = w1 << 14;
+  assign w16513 = w129 + w16384;
+  assign w2064 = w129 << 4;
+  assign w516 = w129 << 2;
+  assign w18577 = w16513 + w2064;
+  assign w19093 = w18577 + w516;
+  assign o_data0 = w19093;
+
+  //multiplier_block area estimate = 6895.627370925;
+endmodule
+```
+
+MODULE 4:
+Topic: arithmetic
+```verilog
+module cla_4bit_adder (
+    input [3:0] A,
+    input [3:0] B,
+    output [3:0] Y
+);
+
+    wire [3:0] P;
+    wire [3:0] G;
+    wire [3:0] C;
+    wire [3:0] C_prop;
+    wire [3:0] C_gen;
+    wire [3:0] C_out;
+
+    assign P = A ^ B;
+    assign G = A & B;
+    assign C_prop[0] = G[0];
+    assign C_prop[1] = G[1] + (P[1] & G[0]);
+    assign C_prop[2] = G[2] + (P[2] & G[1]) + (P[2] & P[1] & G[0]);
+    assign C_prop[3] = G[3] + (P[3] & G[2]) + (P[3] & P[2] & G[1]) + (P[3] & P[2] & P[1] & G[0]);
+    assign C_gen[0] = G[0];
+    assign C_gen[1] = P[1] & G[0];
+    assign C_gen[2] = P[2] & G[1] | P[2] & P[1] & G[0];
+    assign C_gen[3] = P[3] & G[2] | P[3] & P[2] & G[1] | P[3] & P[2] & P[1] & G[0];
+    assign C_out[0] = C_prop[0];
+    assign C_out[1] = C_prop[1] | C_gen[1] & C_prop[0];
+    assign C_out[2] = C_prop[2] | C_gen[2] & C_prop[1] | C_gen[2] & C_gen[1] & C_prop[0];
+    assign C_out[3] = C_prop[3] | C_gen[3] & C_prop[2] | C_gen[3] & C_gen[2] & C_prop[1] | C_gen[3] & C_gen[2] & C_gen[1] & C_prop[0];
+    assign Y = P ^ C_out;
+
+endmodule
+```
+
+MODULE 5:
+Topic: arithmetic
+```verilog
+module MyTruthComplement(input[5:0] yIn , output[5:0] yOut);
+	wire[5:0] inverted_yIn;
+	assign inverted_yIn = ~yIn;
+	assign yOut = yIn[5] ? ({yIn[5],inverted_yIn[4:0]}+6'b1) : yIn;
+endmodule
+```
+
